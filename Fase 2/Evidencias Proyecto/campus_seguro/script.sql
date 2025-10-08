@@ -1,3 +1,4 @@
+# ----- contenido del archivo mi_base.db -----
 CREATE TABLE categoria (
     id_categoria INTEGER NOT NULL PRIMARY KEY,
     categoria TEXT NOT NULL
@@ -101,3 +102,4 @@ CREATE TABLE reporte (
     FOREIGN KEY (prioridad_id_prioridad) REFERENCES prioridad(id_prioridad),
     FOREIGN KEY (usuario_id_usuario, usuario_rol_id_rol) REFERENCES usuario(id_usuario, rol_id_rol)
 );
+
