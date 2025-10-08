@@ -1,3 +1,27 @@
+# app/models.py
 from django.db import models
 
-# Create your models here.
+class RegistroUsuario(models.Model):
+    GENERO_CHOICES = [
+        ("Masculino", "Masculino"),
+        ("Femenino", "Femenino"),
+        ("Otro", "Otro"),
+    ]
+    ROL_CHOICES = [
+        ("usuario", "Usuario"),
+        ("administracion", "Administración"),
+        ("mantenimiento", "Mantenimiento"),
+    ]
+
+    nombre = models.CharField(max_length=100)
+    apellido = models.CharField(max_length=100)
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)  #  reemplazar por hash si luego ocupamos (auth)
+    edad = models.PositiveSmallIntegerField()
+    genero = models.CharField(max_length=12, choices=GENERO_CHOICES)
+    nombre_rol = models.CharField(max_length=20, choices=ROL_CHOICES)
+
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.nombre} {self.apellido} ({self.email})"
