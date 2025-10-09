@@ -10,7 +10,7 @@ def formulario_reporte(request):
         if form.is_valid():
             form.save()
             messages.success(request, "Reporte creado con éxito.")
-            return redirect("usuario_principal")  # o a una lista/detalle
+            return redirect("usuario_principal")  
         else:
             messages.error(request, "Revisa los errores del formulario.")
     else:
