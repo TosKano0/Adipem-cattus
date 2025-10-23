@@ -35,3 +35,6 @@ def usuario_principal(request):
     # Obtener el último usuario registrado
     usuario = RegistroUsuario.objects.last()
     return render(request, "app/usuario_principal.html", {"usuario": usuario})
+
+def administrador(request):
+    return render(request, "app/administrador.html")

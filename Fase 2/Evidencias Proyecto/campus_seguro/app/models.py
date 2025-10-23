@@ -38,3 +38,27 @@ class RegistroUsuario(models.Model):
 
     def __str__(self):
         return f"{self.nombre} {self.apellido} ({self.email})"
+
+class Categoria(models.Model):
+    nombre = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.nombre
+
+class Prioridad(models.Model):
+    nivel = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.nivel
+
+class Rol(models.Model):
+    nombre_rol = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.nombre_rol
+
+class Genero(models.Model):
+    genero = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.genero
