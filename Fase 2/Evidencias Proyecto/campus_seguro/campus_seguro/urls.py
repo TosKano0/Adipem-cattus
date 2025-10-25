@@ -39,19 +39,29 @@ if settings.DEBUG:
    # Página login Ultima Actualizacion Jordan no borrar este cuadro
 
 
-
-    from django.contrib import admin
+from django.contrib import admin
 from django.urls import path
 from app import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", views.home, name="home"),                # raíz (registro)
-    path("home/", views.home, name="home_alias"),     # alias /home
+
+    # Página inicial: LOGIN (vista principal al abrir el servidor)
+    path("", views.login_view, name="login_principal"),
+
+    # Alias explícito si quieres seguir accediendo a /login/
     path("login/", views.login_view, name="login"),
+
+    # Página de registro (home)
+    path("home/", views.home, name="home"),
+
+    # Pantalla principal después de iniciar sesión
     path("usuario_principal/", views.usuario_principal, name="usuario_principal"),
+
+    # Cierre de sesión
     path("logout/", views.logout_view, name="logout"),
 ]
+
 
 
 
