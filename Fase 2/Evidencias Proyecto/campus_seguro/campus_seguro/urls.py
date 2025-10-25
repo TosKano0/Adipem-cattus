@@ -25,3 +25,42 @@ urlpatterns = [
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
+
+# ==============================
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+
+
+
+    from django.contrib import admin
+from django.urls import path
+from app import views
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("", views.home, name="home"),                # raíz (registro)
+    path("home/", views.home, name="home_alias"),     # alias /home
+    path("login/", views.login_view, name="login"),
+    path("usuario_principal/", views.usuario_principal, name="usuario_principal"),
+    path("logout/", views.logout_view, name="logout"),
+]
+
+
+
+# ==============================
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
