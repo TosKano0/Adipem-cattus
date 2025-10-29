@@ -1,6 +1,4 @@
-﻿
-
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -9,8 +7,6 @@
     
     <link rel="stylesheet" href="/static/app/css/login.css">
     <script src="/static/app/js/scripts.js"></script>
-
-
 </head>
 <body>
     <div class="login-container">
@@ -18,7 +14,9 @@
             <h2>Inicio de Sesión</h2>
             <p class="subtitle">Accede con tu correo institucional</p>
 
-            <form id="loginForm" onsubmit="return validateLogin(event)">
+            <form id="loginForm" method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+                
                 <div class="form-group">
                     <label for="email">Correo Institucional</label>
                     <input type="email" id="email" name="email" placeholder="usuario@duocuc.cl" required>
@@ -38,50 +36,16 @@
 
                 <div class="links">
                     <a href="#">¿Olvidaste tu contraseña?</a>
-                    <a href="/home">¿No tienes cuenta? Regístrate aquí</a>
+                    <a href="{% url 'home' %}">¿No tienes cuenta? Regístrate aquí</a>
                 </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
             </form>
-
-
         </div>
     </div>
-
-    <script>
-        // Mostrar/Ocultar contraseña
-        function togglePassword() {
-            const passwordField = document.getElementById('password');
-            passwordField.type = passwordField.type === 'password' ? 'text' : 'password';
-        }
-
-        // Validación inline del login
-        function validateLogin(event) {
-            let valid = true;
-            const email = document.getElementById('email');
-            const password = document.getElementById('password');
-            const emailError = document.getElementById('emailError');
-            const passwordError = document.getElementById('passwordError');
-
-            emailError.textContent = '';
-            passwordError.textContent = '';
-
-            // Validar formato de correo
-            const emailPattern = /^[a-zA-Z0-9._%+-]+@duocuc\.cl$/;
-            if (!emailPattern.test(email.value)) {
-                emailError.textContent = 'Debe ingresar un correo institucional válido (ej: usuario@duocuc.cl)';
-                valid = false;
-            }
-
-            // Validar contraseña mínima
-            if (password.value.length < 6) {
-                passwordError.textContent = 'La contraseña debe tener al menos 6 caracteres.';
-                valid = false;
-            }
-
-            if (!valid) {
-                event.preventDefault();
-            }
-            return valid;
-        }
-    </script>
 </body>
 </html>

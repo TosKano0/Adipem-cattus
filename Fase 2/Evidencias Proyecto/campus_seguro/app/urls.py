@@ -1,26 +1,20 @@
 from django.urls import path
-from .views import home, usuario_principal, formulario_reporte
+from . import views
 
 urlpatterns = [
-    path('', home, name="home"),
-    path('formulario-reporte/', formulario_reporte, name="formulario-reporte"),
-    path('usuario_principal/', usuario_principal, name="usuario_principal"),
+    # 1.Página inicial → LOGIN
+    path("", views.login_view, name="login"),             
+    path("login/", views.login_view, name="login_alias"),  
+
+    # 2.Registro de nuevos usuarios
+    path("home/", views.home, name="home"),
+
+    # 3.Panel principal tras iniciar sesión
+    path("usuario_principal/", views.usuario_principal, name="usuario_principal"),
+
+    # 4.Cierre de sesión
+    path("logout/", views.logout_view, name="logout"),
+
+    # 5.Formulario de reportes
+    path("formulario-reporte/", views.formulario_reporte, name="formulario_reporte"),
 ]
-
-
-
-# Página login Ultima Actualizacion Jordan no borrar este cuadro
-
-from django.contrib import admin
-from django.urls import path
-from app import views
-
-urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("", views.home, name="home"),  # Página de registro
-    path("login/", views.login_view, name="login"),  # Login
-    path("usuario_principal/", views.usuario_principal, name="usuario_principal"),  # Dashboard
-    path("logout/", views.logout_view, name="logout"),  # Cerrar sesión
-]
-
-# Página login Ultima Actualizacion Jordan no borrar este cuadro

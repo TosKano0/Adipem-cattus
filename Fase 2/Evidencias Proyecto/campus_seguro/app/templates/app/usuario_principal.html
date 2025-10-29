@@ -16,12 +16,20 @@
         {% endif %}
     </div>
     <div style="position: absolute; left: 50%; top: 45%; transform: translate(-50%, 0);">
-        <a href="{% url 'formulario-reporte' %}" style="display: inline-block; padding: 12px 32px; background: #4fc3f7; 
+        <a href="{% url 'formulario_reporte' %}" style="display: inline-block; padding: 12px 32px; background: #4fc3f7; 
                 color: #fff; border: 2px solid #4fc3f7; border-radius: 6px; font-size: 1.1em; text-decoration: none; text-align: center;">Nuevo reporte</a>
     </div>
     <div style="position: absolute; left: 50%; top: 80%; transform: translate(-50%, 0);">
-        <a href="/" style="display: inline-block; padding: 12px 32px; background: #4fc3f7; color: #fff; 
-                border: 2px solid #4fc3f7; border-radius: 6px; font-size: 1.1em; text-decoration: none; text-align: center;">Cerrar sesión</a>
+
+        <a href="{% url 'logout' %}" 
+   style="display: inline-block; padding: 12px 32px; background: #f44336; 
+          color: #fff; border: none; border-radius: 6px; text-decoration: none;
+          font-size: 1.1em; text-align: center;">
+    Cerrar sesión
+</a>
+
+
+            
     </div>
 </body>
 </html>
