@@ -1,5 +1,6 @@
 # app/models.py
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 # Create your models here.
 class Reporte(models.Model):
@@ -62,3 +63,63 @@ class Genero(models.Model):
 
     def __str__(self):
         return self.genero
+
+class Edificio(models.Model):
+    nombre = models.CharField(max_length=120, unique=True)          # "Edificio H"
+    codigo = models.SlugField(max_length=32, unique=True)           # "h"
+
+    class Meta:
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return f"{self.nombre} ({self.codigo})"
+
+class Piso(models.Model):
+    """
+    Un piso pertenece a UN edificio. El 'number' puede repetirse entre edificios.
+    Ej: number=2 en Edificio H y number=2 en Edificio A son filas distintas.
+    """
+    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name="pisos")
+    numero = models.IntegerField(
+        help_text="Usa negativos para subterráneos (−1, −2), 0 para zócalo si aplica, 1..N para niveles.",
+        validators=[MinValueValidator(-5), MaxValueValidator(200)]
+    )
+    etiqueta = models.CharField(
+        max_length=40, blank=True,
+        help_text="Opcional: etiqueta visible (p. ej., 'Subterráneo 1', '2° Piso')"
+    )
+
+    class Meta:
+        ordering = ["edificio", "numero"]
+        constraints = [
+            # Un número de piso sólo debe ser único dentro del MISMO edificio
+            models.UniqueConstraint(fields=["edificio", "numero"], name="piso_unico_por_edificio"),
+        ]
+
+    def __str__(self):
+        return f"Piso { self.numero} — {self.edificio.codigo.upper()}"
+
+class Sala(models.Model):
+    """
+    Sala atada al piso. Guardamos 'edificio' denormalizado para filtros rápidos en admin.
+    """
+    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name="salas")
+    piso = models.ForeignKey(Piso, on_delete=models.CASCADE, related_name="salas")
+    codigo = models.CharField(max_length=50, help_text="Ej: H-201, H-203B")
+    nombre = models.CharField(max_length=120, blank=True, help_text="Nombre legible: 'Laboratorio Redes'")
+
+    class Meta:
+        ordering = ["edificio", "piso__numero", "codigo"]
+        constraints = [
+            # Evita duplicar códigos de sala dentro del MISMO edificio
+            models.UniqueConstraint(fields=["edificio", "codigo"], name="codigo_sala_unico_por_edificio"),
+        ]
+
+    def save(self, *args, **kwargs):
+        # Mantén building consistente con floor.building
+        if self.piso_id:
+            self.edificio = self.piso.edificio
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.codigo} — {self.edificio.codigo.upper()} (Piso {self.piso.numero})"

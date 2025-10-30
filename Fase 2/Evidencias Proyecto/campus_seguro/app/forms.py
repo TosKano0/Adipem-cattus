@@ -1,6 +1,6 @@
 # app/forms.py
 from django import forms
-from .models import Reporte
+from .models import Reporte, Categoria, Prioridad, Rol, Genero, Edificio, Piso, Sala
 
 CATEGORIAS = [
     ("Infraestructura", "Infraestructura"),
@@ -84,3 +84,38 @@ class RegistroUsuarioForm(forms.ModelForm):
             "genero": forms.Select(attrs={"class": "form-select"}),
             "nombre_rol": forms.Select(attrs={"class": "form-select"}),
         }
+
+class CategoriaForm(forms.ModelForm):
+    class Meta:
+        model = Categoria
+        fields = ['nombre']
+
+class PrioridadForm(forms.ModelForm):
+    class Meta:
+        model = Prioridad
+        fields = ['nivel']
+
+class RolForm(forms.ModelForm):
+    class Meta:
+        model = Rol
+        fields = ['nombre_rol']
+
+class GeneroForm(forms.ModelForm):
+    class Meta:
+        model = Genero
+        fields = ['genero']
+
+class EdificioForm(forms.ModelForm):
+    class Meta:
+        model = Edificio
+        fields = ['nombre', 'codigo']
+
+class PisoForm(forms.ModelForm):
+    class Meta:
+        model = Piso
+        fields = ['edificio', 'numero', 'etiqueta']
+
+class SalaForm(forms.ModelForm):
+    class Meta:
+        model = Sala
+        fields = ['piso', 'codigo', 'nombre']
