@@ -16,5 +16,5 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
 
     # 5.Formulario de reportes
-    path("formulario-reporte/", views.formulario_reporte, name="formulario_reporte"),
+    path("formulario-reporte/", views.formulario_reporte, name="formulario-reporte"),
 ]

@@ -104,8 +104,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
+#cambio en la zona horaria 16/10/25
+TIME_ZONE = 'America/Santiago'
 
 USE_I18N = True
 
@@ -140,17 +140,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
-
-
-# ==============================
-   # Página login Ultima Actualizacion Jordan no borrar este cuadro
-   # Página login Ultima Actualizacion Jordan no borrar este cuadro
-   # Página login Ultima Actualizacion Jordan no borrar este cuadro
-   # Página login Ultima Actualizacion Jordan no borrar este cuadro
-   # Página login Ultima Actualizacion Jordan no borrar este cuadro
-   # Página login Ultima Actualizacion Jordan no borrar este cuadro
-   # Página login Ultima Actualizacion Jordan no borrar este cuadro
-   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+  # Página login Ultima Actualizacion Jordan no borrar este cuadro
 
 
 
@@ -171,11 +161,4 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 
 # ==============================
-   # Página login Ultima Actualizacion Jordan no borrar este cuadro
-   # Página login Ultima Actualizacion Jordan no borrar este cuadro
-   # Página login Ultima Actualizacion Jordan no borrar este cuadro
-   # Página login Ultima Actualizacion Jordan no borrar este cuadro
-   # Página login Ultima Actualizacion Jordan no borrar este cuadro
-   # Página login Ultima Actualizacion Jordan no borrar este cuadro
-   # Página login Ultima Actualizacion Jordan no borrar este cuadro
    # Página login Ultima Actualizacion Jordan no borrar este cuadro
