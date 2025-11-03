@@ -61,9 +61,67 @@ def login_view(request):
 
 # 3 PANEL PRINCIPAL (usuario_principal.html)
 def usuario_principal(request):
-    # Obtener el último usuario registrado
-    usuario = RegistroUsuario.objects.last()
-    return render(request, "app/usuario_principal.html", {"usuario": usuario})
+    usuario_id = request.session.get("usuario_id")
+
+    # Protección: redirigir si no hay sesión
+    if not usuario_id:
+        messages.warning(request, "Debes iniciar sesión para acceder a esta página.")
+        return redirect("login")
+
+    try:
+        usuario = RegistroUsuario.objects.get(id=usuario_id)
+    except RegistroUsuario.DoesNotExist:
+        messages.error(request, "Usuario no encontrado. Por favor, inicia sesión nuevamente.")
+        return redirect("login")
+
+    # ✅ Solo los reportes del usuario actual
+    reportes = Reporte.objects.filter(usuario_id=usuario_id).order_by('-created')
+    
+    # ✅ Paginación: 4 reportes por página
+    paginator = Paginator(reportes, 4)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "app/usuario_principal.html", {
+        "usuario": usuario,
+        "reportes": page_obj,
+        "page_obj": page_obj
+    })
+
+
+# 4 CERRAR SESIÓN
+def logout_view(request):
+    """
+    Cierra la sesión actual y redirige al login.
+    """
+    request.session.flush()
+    messages.info(request, "Has cerrado sesión correctamente.")
+    return redirect("login")
+
+
+# 5 FORMULARIO DE REPORTE
+def formulario_reporte(request):
+    usuario_id = request.session.get("usuario_id")
+
+    # Protección: redirigir si no hay sesión
+    if not usuario_id:
+        messages.error(request, "Debes iniciar sesión para crear un reporte.")
+        return redirect("login")
+
+    if request.method == "POST":
+        form = ReporteForm(request.POST, request.FILES)
+        if form.is_valid():
+            reporte = form.save(commit=False)
+            reporte.usuario_id = usuario_id  # 👈 Asignar el usuario autenticado
+            reporte.save()
+            messages.success(request, "Reporte creado con éxito.")
+            return redirect("usuario_principal")
+        else:
+            messages.error(request, "Revisa los errores del formulario.")
+    else:
+        form = ReporteForm()
+
+    return render(request, "app/form_reporte.html", {"form": form})
 
 def administrador(request):
     return render(request, "app/administrador.html")
@@ -238,64 +296,3 @@ class SalaDeleteView(DeleteView):
     model = Sala
     template_name = "app/confirm_delete.html"
     success_url = reverse_lazy("sala-list")
-    usuario_id = request.session.get("usuario_id")
-
-    # Protección: redirigir si no hay sesión
-    if not usuario_id:
-        messages.warning(request, "Debes iniciar sesión para acceder a esta página.")
-        return redirect("login")
-
-    try:
-        usuario = RegistroUsuario.objects.get(id=usuario_id)
-    except RegistroUsuario.DoesNotExist:
-        messages.error(request, "Usuario no encontrado. Por favor, inicia sesión nuevamente.")
-        return redirect("login")
-
-    # ✅ Solo los reportes del usuario actual
-    reportes = Reporte.objects.filter(usuario_id=usuario_id).order_by('-created')
-    
-    # ✅ Paginación: 4 reportes por página
-    paginator = Paginator(reportes, 4)
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
-
-    return render(request, "app/usuario_principal.html", {
-        "usuario": usuario,
-        "reportes": page_obj,
-        "page_obj": page_obj
-    })
-
-
-# 4 CERRAR SESIÓN
-def logout_view(request):
-    """
-    Cierra la sesión actual y redirige al login.
-    """
-    request.session.flush()
-    messages.info(request, "Has cerrado sesión correctamente.")
-    return redirect("login")
-
-
-# 5 FORMULARIO DE REPORTE
-def formulario_reporte(request):
-    usuario_id = request.session.get("usuario_id")
-
-    # Protección: redirigir si no hay sesión
-    if not usuario_id:
-        messages.error(request, "Debes iniciar sesión para crear un reporte.")
-        return redirect("login")
-
-    if request.method == "POST":
-        form = ReporteForm(request.POST, request.FILES)
-        if form.is_valid():
-            reporte = form.save(commit=False)
-            reporte.usuario_id = usuario_id  # 👈 Asignar el usuario autenticado
-            reporte.save()
-            messages.success(request, "Reporte creado con éxito.")
-            return redirect("usuario_principal")
-        else:
-            messages.error(request, "Revisa los errores del formulario.")
-    else:
-        form = ReporteForm()
-
-    return render(request, "app/form_reporte.html", {"form": form})
