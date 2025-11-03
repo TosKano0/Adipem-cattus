@@ -1,0 +1,190 @@
+
+
+/* ==============================
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+   # Página login Ultima Actualizacion Jordan no borrar este cuadro
+================================*/
+
+:root {
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --text: #1c1f25;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --blue: #2563eb;
+  --blue-600: #1e40af;
+  --red: #dc2626;
+  --red-600: #b91c1c;
+  --ring: #2563eb;
+  --error: #ef4444;
+  --radius: 14px;
+  --gap: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* === Contenedor principal === */
+.login-container {
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+}
+
+.login-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
+  padding: 36px 28px;
+  text-align: center;
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* === Titulos === */
+.login-box h2 {
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+  color: var(--blue-600);
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: var(--muted);
+  margin-bottom: 25px;
+}
+
+/* === Formulario === */
+.form-group {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+/* === Campos === */
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+
+/* === Mostrar / Ocultar Contraseña === */
+.password-wrapper {
+  position: relative;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--muted);
+  user-select: none;
+}
+
+.toggle-password:hover {
+  color: var(--blue-600);
+}
+
+/* === Botón Ingresar === */
+.btn {
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn:hover {
+  background: var(--blue-600);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+/* === Links === */
+.links {
+  margin-top: 20px;
+}
+
+.links a {
+  display: block;
+  color: var(--blue);
+  text-decoration: none;
+  margin-top: 8px;
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+}
+
+.links a:hover {
+  color: var(--blue-600);
+  text-decoration: underline;
+}
+
+/* === Mensajes de error === */
+.error {
+  color: var(--error);
+  font-size: 0.85rem;
+  margin-top: 6px;
+  display: block;
+}
+
+/* === Adaptable a móviles === */
+@media (max-width: 480px) {
+  .login-box {
+    padding: 28px 20px;
+  }
+  .btn {
+    font-size: 0.95rem;
+  }
+}

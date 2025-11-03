@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Mantenimiento - CampusSeguro</title>
+    <style>
+        body {
+            background: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.5em;
+            color: #333;
+        }
+        .header p {
+            margin: 0;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .logout-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .logout-btn:hover {
+            background: #5a6268;
+        }
+
+        /* Tarjetas resumen */
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .stat-card .value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+        .stat-card .icon {
+            font-size: 1.5em;
+            color: #6c757d;
+        }
+        .stat-card.pendiente .icon { color: #ffc107; }
+        .stat-card.en-proceso .icon { color: #0d6efd; }
+        .stat-card.pausado .icon { color: #fd7e14; }
+        .stat-card.completado .icon { color: #198754; }
+
+        /* Filtros */
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .filters h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .filter-group input, .filter-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        /* Tabla de reportes */
+        .reports-table {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .reports-table h3 {
+            margin: 0;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 1em;
+            color: #333;
+        }
+        .reports-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .reports-table th, .reports-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .reports-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            font-size: 0.9em;
+            color: #495057;
+        }
+        .reports-table tr:hover {
+            background: #f8f9fa;
+        }
+        .reports-table .priority-high {
+            background: #ffe3e3;
+            color: #dc3545;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .reports-table .priority-medium {
+            background: #fff3cd;
+            color: #ffc107;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .reports-table .priority-low {
+            background: #d1e7dd;
+            color: #198754;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .reports-table .status-pendiente {
+            background: #e9ecef;
+            color: #6c757d;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .reports-table .status-en-proceso {
+            background: #cce5ff;
+            color: #0d6efd;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .reports-table .status-pausado {
+            background: #fff3cd;
+            color: #fd7e14;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .reports-table .status-completado {
+            background: #d1e7dd;
+            color: #198754;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .reports-table .actions button {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        .reports-table .actions button:hover {
+            background: #5a6268;
+        }
+
+        /* Paginación */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            gap: 5px;
+        }
+        .pagination a, .pagination span {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #333;
+            font-size: 0.9em;
+        }
+        .pagination a:hover {
+            background: #e9ecef;
+        }
+        .pagination .active {
+            background: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+
+        /* Botones generales */
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #0d6efd;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.9em;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #0b5ed7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Encabezado -->
+        <div class="header">
+            <div>
+                <h1>Dashboard Mantenimiento</h1>
+                {% if usuario %}
+                    <p>Bienvenido, <strong>{{ usuario.nombre }} {{ usuario.apellido }}</strong> - Gestión de Reportes</p>
+                {% else %}
+                    <p>Gestión de Reportes</p>
+                {% endif %}
+            </div>
+            <a href="/" class="logout-btn">Cerrar Sesión</a>
+        </div>
+
+        <!-- Tarjetas resumen -->
+        <div class="stats-cards">
+            <div class="stat-card">
+                <div>
+                    <div>Total</div>
+                    <div class="value">{{ total }}</div>
+                </div>
+                <div class="icon">📄</div>
+            </div>
+            <div class="stat-card pendiente">
+                <div>
+                    <div>Pendientes</div>
+                    <div class="value">{{ pendientes }}</div>
+                </div>
+                <div class="icon">⏳</div>
+            </div>
+            <div class="stat-card en-proceso">
+                <div>
+                    <div>En Proceso</div>
+                    <div class="value">{{ en_proceso }}</div>
+                </div>
+                <div class="icon">❗</div>
+            </div>
+            <div class="stat-card pausado">
+                <div>
+                    <div>Pausados</div>
+                    <div class="value">{{ pausados }}</div>
+                </div>
+                <div class="icon">⏸️</div>
+            </div>
+            <div class="stat-card completado">
+                <div>
+                    <div>Completados</div>
+                    <div class="value">{{ completados }}</div>
+                </div>
+                <div class="icon">✅</div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filters">
+            <h3>🔎 Filtros y Búsqueda</h3>
+            <form method="get" id="filtroForm">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="busqueda">Buscar</label>
+                        <input type="text" name="busqueda" id="busqueda" placeholder="Buscar reportes..." value="{{ busqueda }}">
+                    </div>
+                    <div class="filter-group">
+                        <label for="estado">Estado</label>
+                        <select name="estado" id="estado">
+                            <option value="todos" {% if estado_filtro == 'todos' %}selected{% endif %}>Todos</option>
+                            <option value="pendiente" {% if estado_filtro == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                            <option value="en_proceso" {% if estado_filtro == 'en_proceso' %}selected{% endif %}>En Proceso</option>
+                            <option value="pausado" {% if estado_filtro == 'pausado' %}selected{% endif %}>Pausado</option>
+                            <option value="completado" {% if estado_filtro == 'completado' %}selected{% endif %}>Completado</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="prioridad">Prioridad</label>
+                        <select name="prioridad" id="prioridad">
+                            <option value="todas" {% if prioridad_filtro == 'todas' %}selected{% endif %}>Todas</option>
+                            <option value="Alta" {% if prioridad_filtro == 'Alta' %}selected{% endif %}>Alta</option>
+                            <option value="Media" {% if prioridad_filtro == 'Media' %}selected{% endif %}>Media</option>
+                            <option value="Baja" {% if prioridad_filtro == 'Baja' %}selected{% endif %}>Baja</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tabla de reportes -->
+        <div class="reports-table">
+            <h3>Gestión de Reportes</h3>
+            <p style="padding: 0 20px 10px;">Mostrando {{ page_obj.start_index }} de {{ page_obj.end_index }} de {{ page_obj.paginator.count }} reportes</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Estudiante</th>
+                        <th>Ubicación</th>
+                        <th>Prioridad</th>
+                        <th>Estado</th>
+                        <th>Asignado</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in reportes %}
+                    <tr>
+                        <td>
+                            <strong>{{ r.titulo }}</strong><br>
+                            <small>{{ r.descripcion|truncatechars:50 }}</small>
+                        </td>
+                        <td>{{ r.usuario.nombre }} {{ r.usuario.apellido }}</td>
+                        <td>{{ r.ubicacion }}</td>
+                        <td>
+                            {% if r.prioridad == 'Alta' %}
+                                <span class="priority-high">{{ r.prioridad }}</span>
+                            {% elif r.prioridad == 'Media' %}
+                                <span class="priority-medium">{{ r.prioridad }}</span>
+                            {% else %}
+                                <span class="priority-low">{{ r.prioridad }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if r.estado == 'pendiente' %}
+                                <span class="status-pendiente">Pendiente</span>
+                            {% elif r.estado == 'en_proceso' %}
+                                <span class="status-en-proceso">En Proceso</span>
+                            {% elif r.estado == 'pausado' %}
+                                <span class="status-pausado">Pausado</span>
+                            {% else %}
+                                <span class="status-completado">Completado</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if r.asignado_a %}
+                                {{ r.asignado_a.nombre }} {{ r.asignado_a.apellido }}
+                            {% else %}
+                                Sin asignar
+                            {% endif %}
+                        </td>
+                        <td>{{ r.created|date:"d M Y, H:i" }}</td>
+                        <td class="actions">
+                            <button onclick="gestionarReporte({{ r.id }})">Gestionar</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 20px;">
+                            No hay reportes disponibles.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Paginación -->
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1&{{ request.GET.urlencode }}">Primera</a>
+                    <a href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Anterior</a>
+                {% endif %}
+
+                <span class="active">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">Siguiente</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}&{{ request.GET.urlencode }}">Última</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Script para filtros y acciones -->
+    <script>
+        // Actualizar filtros automáticamente
+        document.getElementById('filtroForm').addEventListener('change', function() {
+            this.submit();
+        });
+
+        // Función para gestionar reporte (placeholder)
+        function gestionarReporte(id) {
+            alert("Funcionalidad de gestión no implementada aún. ID del reporte: " + id);
+            // Aquí podrías abrir un modal o redirigir a una página de edición
+        }
+    </script>
+</body>
+</html>
