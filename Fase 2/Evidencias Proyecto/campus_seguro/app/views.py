@@ -1,5 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
+<<<<<<< HEAD
+=======
+from django.core.paginator import Paginator
+from django.contrib import messages
+from django.db.models import Q
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from .forms import PisoForm, ReporteForm, RegistroUsuarioForm, CategoriaForm, PrioridadForm, RolForm, GeneroForm, EdificioForm, SalaForm
+from .models import RegistroUsuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala
+>>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 from django.core.paginator import Paginator
 from django.contrib import messages
 from django.db.models import Q
@@ -200,6 +209,7 @@ def formulario_reporte(request):
 
     return render(request, "app/form_reporte.html", {"form": form})
 
+<<<<<<< HEAD
 
 def administrador(request):
     return render(request, "app/administrador.html")
@@ -209,36 +219,59 @@ def admin_ubicacion(request):
     return render(request, "app/admin_ubicacion.html")
 
 
+=======
+def administrador(request):
+    return render(request, "app/administrador.html")
+
+def admin_ubicacion(request):
+    return render(request, "app/admin_ubicacion.html")
+
+>>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class CategoriaListView(ListView):
     model = Categoria
     paginate_by = 10
     template_name = "app/list_categoria.html"
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class PrioridadListView(ListView):
     model = Prioridad
     paginate_by = 10
     template_name = "app/list_prioridad.html"
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class RolListView(ListView):
     model = Rol
     paginate_by = 10
     template_name = "app/list_rol.html"
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class GeneroListView(ListView):
     model = Genero
     paginate_by = 10
     template_name = "app/list_genero.html"
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class EdificioListView(ListView):
     model = Edificio
     paginate_by = 10
     template_name = "app/list_edificio.html"
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class PisoListView(ListView):
     model = Piso
     paginate_by = 10
@@ -251,7 +284,10 @@ class PisoListView(ListView):
             qs = qs.filter(edificio__id=b)
         return qs
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class SalaListView(ListView):
     model = Sala
     paginate_by = 10
@@ -264,11 +300,14 @@ class SalaListView(ListView):
             qs = qs.filter(Q(codigo__icontains=q) | Q(nombre__icontains=q) | Q(edificio__nombre__icontains=q) | Q(piso__etiqueta__icontains=q))
         return qs
 
+<<<<<<< HEAD
 
 # === Vistas basadas en clases (Create, Update, Delete) ===
 # ... (todas tus CBVs permanecen igual y están bien) ...
 # (No las repetí para no alargar, pero ya están en tu código)
 
+=======
+>>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class CategoriaCreateView(CreateView):
     model = Categoria
     form_class = CategoriaForm
@@ -386,4 +425,8 @@ class PisoDeleteView(DeleteView):
 class SalaDeleteView(DeleteView):
     model = Sala
     template_name = "app/confirm_delete.html"
+<<<<<<< HEAD
     success_url = reverse_lazy("sala-list")
+=======
+    success_url = reverse_lazy("sala-list")
+>>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d

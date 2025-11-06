@@ -1,0 +1,47 @@
+{% extends 'app/base.html' %}
+{% load static %}
+
+{% block contenido %}
+
+<link rel="stylesheet" href="{% static 'css/formulario_reporte.css' %}">
+
+<section class="container">
+    <div class="card">
+        <header class="card__header">
+            <h2 class="card__title">Formulario de prioridad</h2>
+            {% if form.non_field_errors %}
+            <div class="alert alert--error">{{ form.non_field_errors }}</div>
+            {% endif %}
+        </header>
+
+        <form action="" method="post" novalidate class="form" id="reporteForm" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            {% for field in form %}
+            <div class="form__group {% if field.errors %}has-error{% endif %}">
+                <label class="form__label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<small class="form__help">{{ field.help_text }}</small>{% endif %}
+                {% for error in field.errors %}<small class="form__error">{{ error }}</small>{% endfor %}
+            </div>
+            {% endfor %}
+
+            <footer class="form__actions">
+                <button type="button" class="btn btn--ghost" id="btnCancelar">Cancelar</button>
+                <button type="submit" class="btn btn--primary">Enviar</button>
+            </footer>
+        </form>
+    </div>
+</section>
+
+<script>
+    (function () {
+        const cancelar = document.getElementById('btnCancelar');
+        cancelar.addEventListener('click', () => {
+            if (document.referrer) window.history.back();
+            else window.location.href = '/';
+        });
+    })();
+</script>
+
+{% endblock %}
