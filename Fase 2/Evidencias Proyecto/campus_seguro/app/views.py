@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from .forms import PisoForm, ReporteForm, RegistroUsuarioForm, CategoriaForm, PrioridadForm, RolForm, GeneroForm, EdificioForm, SalaForm
-from .models import RegistroUsuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala, Reporte
+from .models import Usuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala, Reporte
 from django.contrib.auth.hashers import make_password, check_password
 from .models import Usuario, Reporte
 from .forms import RegistroUsuarioForm, ReporteForm
@@ -88,8 +88,8 @@ def mantenimiento(request):
         return redirect("login")
 
     try:
-        usuario = RegistroUsuario.objects.get(id=usuario_id)
-    except RegistroUsuario.DoesNotExist:
+        usuario = Usuario.objects.get(id=usuario_id)
+    except Usuario.DoesNotExist:
         messages.error(request, "Usuario no encontrado.")
         return redirect("login")
 

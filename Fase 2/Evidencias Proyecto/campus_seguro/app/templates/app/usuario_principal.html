@@ -298,6 +298,13 @@
         {% endif %}
     </div>
 
+        {% if request.user.is_authenticated %}
+            {% if request.user.nombre_rol == "mantenimiento"%}
+                <a href="" class="btn btn-warning">Panel mantencion</a>
+            {% endif %}
+        {% endif %}
+    </div>
+
     <!-- Script para el modal de imagen -->
     <script>
         function mostrarModal(url, titulo) {
