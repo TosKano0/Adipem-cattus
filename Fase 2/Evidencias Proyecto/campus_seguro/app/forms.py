@@ -1,6 +1,8 @@
 # app/forms.py
 from django import forms
-from .models import Reporte, RegistroUsuario, Categoria, Prioridad, Rol, Genero, Edificio, Piso, Sala
+from .models import Reporte, Categoria, Prioridad, Rol, Genero, Edificio, Piso, Sala
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import get_user_model
 
 CATEGORIAS = [
     ("Infraestructura", "Infraestructura"),
@@ -56,36 +58,61 @@ class ReporteForm(forms.ModelForm):
         if hasattr(img, "content_type") and not img.content_type.startswith("image/"):
             raise forms.ValidationError("El archivo debe ser una imagen válida.")
         return img
+from django import forms
+from .models import Usuario
 
+User = get_user_model()
 
-class RegistroUsuarioForm(forms.ModelForm):
-    password = forms.CharField(
-        widget=forms.PasswordInput(attrs={"placeholder": "Contraseña *", "class": "form-control"}),
-        min_length=6
+class RegistroUsuarioForm(UserCreationForm):
+    # Campos que tú sobrescribiste ⇒ define su widget aquí
+    first_name = forms.CharField(
+        label="Nombre", max_length=150,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Tu nombre"})
+    )
+    last_name = forms.CharField(
+        label="Apellido", max_length=150,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Tu apellido"})
+    )
+    email = forms.EmailField(
+        label="Correo electrónico",
+        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "tucorreo@duocuc.cl"})
+    )
+
+    # Estos vienen del padre ⇒ también los sobrescribimos para agregar la clase
+    password1 = forms.CharField(
+        label="Contraseña",
+        widget=forms.PasswordInput(attrs={"class": "form-control"})
+    )
+    password2 = forms.CharField(
+        label="Confirmar contraseña",
+        widget=forms.PasswordInput(attrs={"class": "form-control"})
     )
 
     class Meta:
-        model = RegistroUsuario
-        fields = ["nombre", "apellido", "email", "password", "edad", "genero", "nombre_rol"]
+        model = User
+        fields = ("first_name", "last_name", "email", "edad", "genero", "nombre_rol")
         widgets = {
-            "nombre": forms.TextInput(attrs={"placeholder": "Nombre *", "class": "form-control"}),
-            "apellido": forms.TextInput(attrs={"placeholder": "Apellido *", "class": "form-control"}),
-            "email": forms.EmailInput(attrs={"placeholder": "Correo electrónico *", "class": "form-control"}),
-            "edad": forms.NumberInput(attrs={"min": 16, "max": 99, "placeholder": "Edad *", "class": "form-control"}),
-            "genero": forms.Select(attrs={"class": "form-select"}),
+            "edad":       forms.NumberInput(attrs={"class": "form-control", "min": 0, "placeholder": "Tu edad"}),
+            "genero":     forms.Select(attrs={"class": "form-select"}),
             "nombre_rol": forms.Select(attrs={"class": "form-select"}),
         }
 
     def clean_email(self):
-        email = self.cleaned_data.get("email")
-        if not email:
-            raise forms.ValidationError("Este campo es obligatorio.")
-        if not (email.endswith("@duocuc.cl") or email.endswith("@mantenimiento.cl")):
-            raise forms.ValidationError("El correo debe ser de dominio @duocuc.cl o @mantenimiento.cl en caso de ser empleado de mantenimiento.")
+        email = (self.cleaned_data.get("email") or "").lower()
+        if not email.endswith("@duocuc.cl"):
+            raise forms.ValidationError("El correo debe ser @duocuc.cl")
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("Ya existe un usuario con este correo.")
         return email
 
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.username = self.cleaned_data["email"].lower()
+        user.email = self.cleaned_data["email"].lower()
+        if commit:
+            user.save()
+        return user
 
-# Formularios de administración
 class CategoriaForm(forms.ModelForm):
     class Meta:
         model = Categoria

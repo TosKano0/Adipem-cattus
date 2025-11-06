@@ -162,3 +162,5 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # ==============================
    # Página login Ultima Actualizacion Jordan no borrar este cuadro
+
+AUTH_USER_MODEL = 'app.Usuario'

@@ -1,14 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
-<<<<<<< HEAD
-=======
-from django.core.paginator import Paginator
-from django.contrib import messages
-from django.db.models import Q
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-from .forms import PisoForm, ReporteForm, RegistroUsuarioForm, CategoriaForm, PrioridadForm, RolForm, GeneroForm, EdificioForm, SalaForm
-from .models import RegistroUsuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala
->>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
+from .models import Usuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala
 from django.core.paginator import Paginator
 from django.contrib import messages
 from django.db.models import Q
@@ -16,90 +8,71 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from .forms import PisoForm, ReporteForm, RegistroUsuarioForm, CategoriaForm, PrioridadForm, RolForm, GeneroForm, EdificioForm, SalaForm
 from .models import RegistroUsuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala, Reporte
 from django.contrib.auth.hashers import make_password, check_password
+from .models import Usuario, Reporte
+from .forms import RegistroUsuarioForm, ReporteForm
+from django.contrib.auth import authenticate, login, logout, get_user_model
+from django.contrib.auth.decorators import login_required
 
+User = get_user_model()
 
 # 1 REGISTRO DE NUEVO USUARIO (home.html)
 def home(request):
-    if request.method == "POST":
-        form = RegistroUsuarioForm(request.POST)
-        if form.is_valid():
-            usuario = form.save(commit=False)
-            usuario.password = make_password(form.cleaned_data["password"])
-            usuario.save()
-            messages.success(request, "Cuenta creada correctamente. Ahora puedes iniciar sesión.")
-            return redirect("login")
-        else:
-            messages.error(request, "Por favor corrige los errores del formulario.")
-    else:
-        form = RegistroUsuarioForm()
-    return render(request, "app/home.html", {"form": form})
-
-
-# 2 INICIO DE SESIÓN (login.html)
-def login_view(request):
-    if request.session.get("usuario_id"):
+    if request.user.is_authenticated:
         return redirect("usuario_principal")
 
     if request.method == "POST":
-        email = request.POST.get("email")
-        password = request.POST.get("password")
-
-        # ✅ Validación: solo correos @duocuc.cl o @mantenimiento.cl
-        if not email or not (
-            email.endswith("@duocucuc.cl") or email.endswith("@mantenimiento.cl")
-        ):
-            messages.error(request, "El correo debe ser de dominio @duocuc.cl o @mantenimiento.cl")
-            return render(request, "app/login.html")
-
-        try:
-            usuario = RegistroUsuario.objects.get(email=email)
-        except RegistroUsuario.DoesNotExist:
-            messages.error(request, "El usuario no existe o el correo es incorrecto.")
-            return render(request, "app/login.html")
-
-        if check_password(password, usuario.password):
-            request.session["usuario_id"] = usuario.id
-            request.session["usuario_nombre"] = usuario.nombre
-
-            # 👇 Redirección por dominio
-            if email.endswith("@duocuc.cl"):
-                return redirect("usuario_principal")
-            elif email.endswith("@mantenimiento.cl"):
-                return redirect("mantenimiento_dashboard")
-            else:
-                # Fallback por si acaso
-                return redirect("usuario_principal")
+        form = RegistroUsuarioForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Usuario registrado correctamente. Ahora puedes iniciar sesión.")
+            return redirect("login")
         else:
-            messages.error(request, "Contraseña incorrecta. Intenta nuevamente.")
+            messages.error(request, "Revisa los errores del formulario.")
+    else:
+        form = RegistroUsuarioForm()
+
+    return render(request, "app/home.html", {"form": form})
+
+# 2 INICIO DE SESIÓN (login.html)
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect("usuario_principal")
+
+    if request.method == "POST":
+        identificador = (request.POST.get("email") or "").strip().lower()
+        password = request.POST.get("password") or ""
+
+        user = None
+
+        # 1) Intenta autenticar asumiendo que el identificador es el username
+        user = authenticate(request, username=identificador, password=password)
+
+        if user is None:
+            # 2) Si no funcionó, intenta tratar el identificador como EMAIL
+            u = User.objects.filter(email__iexact=identificador).first()
+            if u:
+                user = authenticate(request, username=u.username, password=password)
+
+        if user is not None and user.is_active:
+            login(request, user)
+            messages.success(request, f"Bienvenido {user.first_name or user.username} 👋")
+            return redirect("usuario_principal")
+
+        messages.error(request, "Credenciales inválidas.")
 
     return render(request, "app/login.html")
 
 
 # 3 PANEL PRINCIPAL (usuario_principal.html)
+@login_required
 def usuario_principal(request):
-    usuario_id = request.session.get("usuario_id")
+    reportes = Reporte.objects.filter(usuario=request.user).order_by('-created')
 
-    # Protección: redirigir si no hay sesión
-    if not usuario_id:
-        messages.warning(request, "Debes iniciar sesión para acceder a esta página.")
-        return redirect("login")
-
-    try:
-        usuario = RegistroUsuario.objects.get(id=usuario_id)
-    except RegistroUsuario.DoesNotExist:
-        messages.error(request, "Usuario no encontrado. Por favor, inicia sesión nuevamente.")
-        return redirect("login")
-
-    # ✅ Solo los reportes del usuario actual
-    reportes = Reporte.objects.filter(usuario_id=usuario_id).order_by('-created')
-    
-    # ✅ Paginación: 4 reportes por página
     paginator = Paginator(reportes, 4)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
 
     return render(request, "app/usuario_principal.html", {
-        "usuario": usuario,
         "reportes": page_obj,
         "page_obj": page_obj
     })
@@ -177,39 +150,27 @@ def mantenimiento(request):
 
 # 4 CERRAR SESIÓN
 def logout_view(request):
-    """
-    Cierra la sesión actual y redirige al login.
-    """
-    request.session.flush()
+    logout(request)
     messages.info(request, "Has cerrado sesión correctamente.")
     return redirect("login")
 
-
 # 5 FORMULARIO DE REPORTE
+@login_required
 def formulario_reporte(request):
-    usuario_id = request.session.get("usuario_id")
-
-    # Protección: redirigir si no hay sesión
-    if not usuario_id:
-        messages.error(request, "Debes iniciar sesión para crear un reporte.")
-        return redirect("login")
-
     if request.method == "POST":
         form = ReporteForm(request.POST, request.FILES)
         if form.is_valid():
             reporte = form.save(commit=False)
-            reporte.usuario_id = usuario_id  # 👈 Asignar el usuario autenticado
+            reporte.usuario = request.user
             reporte.save()
             messages.success(request, "Reporte creado con éxito.")
             return redirect("usuario_principal")
-        else:
-            messages.error(request, "Revisa los errores del formulario.")
+        messages.error(request, "Revisa los errores del formulario.")
     else:
         form = ReporteForm()
 
     return render(request, "app/form_reporte.html", {"form": form})
 
-<<<<<<< HEAD
 
 def administrador(request):
     return render(request, "app/administrador.html")
@@ -219,59 +180,36 @@ def admin_ubicacion(request):
     return render(request, "app/admin_ubicacion.html")
 
 
-=======
-def administrador(request):
-    return render(request, "app/administrador.html")
-
-def admin_ubicacion(request):
-    return render(request, "app/admin_ubicacion.html")
-
->>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class CategoriaListView(ListView):
     model = Categoria
     paginate_by = 10
     template_name = "app/list_categoria.html"
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class PrioridadListView(ListView):
     model = Prioridad
     paginate_by = 10
     template_name = "app/list_prioridad.html"
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class RolListView(ListView):
     model = Rol
     paginate_by = 10
     template_name = "app/list_rol.html"
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class GeneroListView(ListView):
     model = Genero
     paginate_by = 10
     template_name = "app/list_genero.html"
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class EdificioListView(ListView):
     model = Edificio
     paginate_by = 10
     template_name = "app/list_edificio.html"
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class PisoListView(ListView):
     model = Piso
     paginate_by = 10
@@ -284,10 +222,7 @@ class PisoListView(ListView):
             qs = qs.filter(edificio__id=b)
         return qs
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class SalaListView(ListView):
     model = Sala
     paginate_by = 10
@@ -300,14 +235,11 @@ class SalaListView(ListView):
             qs = qs.filter(Q(codigo__icontains=q) | Q(nombre__icontains=q) | Q(edificio__nombre__icontains=q) | Q(piso__etiqueta__icontains=q))
         return qs
 
-<<<<<<< HEAD
 
 # === Vistas basadas en clases (Create, Update, Delete) ===
 # ... (todas tus CBVs permanecen igual y están bien) ...
 # (No las repetí para no alargar, pero ya están en tu código)
 
-=======
->>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
 class CategoriaCreateView(CreateView):
     model = Categoria
     form_class = CategoriaForm
@@ -425,8 +357,4 @@ class PisoDeleteView(DeleteView):
 class SalaDeleteView(DeleteView):
     model = Sala
     template_name = "app/confirm_delete.html"
-<<<<<<< HEAD
     success_url = reverse_lazy("sala-list")
-=======
-    success_url = reverse_lazy("sala-list")
->>>>>>> 052c79428d73e0175c241cf6c7bb420c83ff567d
