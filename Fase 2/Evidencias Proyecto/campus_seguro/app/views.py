@@ -10,112 +10,91 @@ from django.core.paginator import Paginator
 from django.contrib.auth.hashers import make_password, check_password
 from .models import Usuario, Reporte
 from .forms import RegistroUsuarioForm, ReporteForm
+from django.contrib.auth import authenticate, login, logout, get_user_model
+from django.contrib.auth.decorators import login_required
 
+User = get_user_model()
 
 # 1 REGISTRO DE NUEVO USUARIO (home.html)
 def home(request):
+    if request.user.is_authenticated:
+        return redirect("usuario_principal")
+
     if request.method == "POST":
         form = RegistroUsuarioForm(request.POST)
         if form.is_valid():
-            form.save()  # crea el usuario con password hasheado
+            form.save()
             messages.success(request, "Usuario registrado correctamente. Ahora puedes iniciar sesión.")
-            return redirect("login")  # ajusta al nombre de tu url de login
+            return redirect("login")
         else:
             messages.error(request, "Revisa los errores del formulario.")
     else:
         form = RegistroUsuarioForm()
-    return render(request, "app/home.html", {"form": form})
 
+    return render(request, "app/home.html", {"form": form})
 
 # 2 INICIO DE SESIÓN (login.html)
 def login_view(request):
-    """
-    Vista de inicio de sesión.
-    Si el usuario ya tiene sesión activa, lo redirige al panel principal.
-    """
-    if request.session.get("usuario_id"):
+    if request.user.is_authenticated:
         return redirect("usuario_principal")
 
     if request.method == "POST":
-        email = request.POST.get("email")
-        password = request.POST.get("password")
+        identificador = (request.POST.get("email") or "").strip().lower()
+        password = request.POST.get("password") or ""
 
-        try:
-            usuario = Usuario.objects.get(email=email)
-        except Usuario.DoesNotExist:
-            messages.error(request, "El usuario no existe o el correo es incorrecto.")
-            return render(request, "app/login.html")
+        user = None
 
-        if check_password(password, usuario.password):
-            request.session["usuario_id"] = usuario.id
-            request.session["usuario_nombre"] = usuario.first_name
-            messages.success(request, f"Bienvenido {usuario.first_name} 👋")
+        # 1) Intenta autenticar asumiendo que el identificador es el username
+        user = authenticate(request, username=identificador, password=password)
+
+        if user is None:
+            # 2) Si no funcionó, intenta tratar el identificador como EMAIL
+            u = User.objects.filter(email__iexact=identificador).first()
+            if u:
+                user = authenticate(request, username=u.username, password=password)
+
+        if user is not None and user.is_active:
+            login(request, user)
+            messages.success(request, f"Bienvenido {user.first_name or user.username} 👋")
             return redirect("usuario_principal")
-        else:
-            messages.error(request, "Contraseña incorrecta. Intenta nuevamente.")
+
+        messages.error(request, "Credenciales inválidas.")
 
     return render(request, "app/login.html")
 
 
 # 3 PANEL PRINCIPAL (usuario_principal.html)
+@login_required
 def usuario_principal(request):
-    usuario_id = request.session.get("usuario_id")
+    reportes = Reporte.objects.filter(usuario=request.user).order_by('-created')
 
-    # Protección: redirigir si no hay sesión
-    if not usuario_id:
-        messages.warning(request, "Debes iniciar sesión para acceder a esta página.")
-        return redirect("login")
-
-    try:
-        usuario = Usuario.objects.get(id=usuario_id)
-    except Usuario.DoesNotExist:
-        messages.error(request, "Usuario no encontrado. Por favor, inicia sesión nuevamente.")
-        return redirect("login")
-
-    # ✅ Solo los reportes del usuario actual
-    reportes = Reporte.objects.filter(usuario_id=usuario_id).order_by('-created')
-    
-    # ✅ Paginación: 4 reportes por página
     paginator = Paginator(reportes, 4)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
 
     return render(request, "app/usuario_principal.html", {
-        "usuario": usuario,
         "reportes": page_obj,
         "page_obj": page_obj
     })
 
-
 # 4 CERRAR SESIÓN
 def logout_view(request):
-    """
-    Cierra la sesión actual y redirige al login.
-    """
-    request.session.flush()
+    logout(request)
     messages.info(request, "Has cerrado sesión correctamente.")
     return redirect("login")
 
-
 # 5 FORMULARIO DE REPORTE
+@login_required
 def formulario_reporte(request):
-    usuario_id = request.session.get("usuario_id")
-
-    # Protección: redirigir si no hay sesión
-    if not usuario_id:
-        messages.error(request, "Debes iniciar sesión para crear un reporte.")
-        return redirect("login")
-
     if request.method == "POST":
         form = ReporteForm(request.POST, request.FILES)
         if form.is_valid():
             reporte = form.save(commit=False)
-            reporte.usuario_id = usuario_id  # 👈 Asignar el usuario autenticado
+            reporte.usuario = request.user
             reporte.save()
             messages.success(request, "Reporte creado con éxito.")
             return redirect("usuario_principal")
-        else:
-            messages.error(request, "Revisa los errores del formulario.")
+        messages.error(request, "Revisa los errores del formulario.")
     else:
         form = ReporteForm()
 

@@ -2,6 +2,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 
 class Reporte(models.Model):
     titulo = models.CharField(max_length=100)
@@ -15,7 +16,7 @@ class Reporte(models.Model):
 
     # 👇 Campo obligatorio: quién creó el reporte
     usuario = models.ForeignKey(
-        'Usuario',
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='reportes_creados'
     )
@@ -35,10 +36,9 @@ class Reporte(models.Model):
 
     # 👇 Opcional: asignado a un usuario de mantenimiento
     asignado_a = models.ForeignKey(
-        'Usuario',
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        null=True, blank=True,
         related_name='reportes_asignados'
     )
 

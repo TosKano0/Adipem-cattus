@@ -208,8 +208,8 @@
 <body>
     <div class="container">
         <h1>¡Bienvenido a Campus Seguro!</h1>
-        {% if usuario %}
-            <p>Hola, <strong>{{ usuario.first_name }} {{ usuario.last_name }}</strong>. Has iniciado sesión correctamente.</p>
+        {% if request.user %}
+            <p>Hola, <strong>{{ request.user.first_name }} {{ request.user.last_name }}</strong>. Has iniciado sesión correctamente.</p>
         {% else %}
             <p>Has iniciado sesión correctamente.</p>
         {% endif %}
@@ -290,6 +290,12 @@
 
         <!-- Botón Cerrar sesión -->
         <a href="{% url 'logout' %}" class="btn btn-secondary">Cerrar sesión</a>
+
+        {% if request.user.is_authenticated %}
+            {% if request.user.is_staff or request.user.is_superuser %}
+                <a href="{% url 'administrador' %}" class="btn btn-warning">Panel administrativo</a>
+            {% endif %}
+        {% endif %}
     </div>
 
     <!-- Script para el modal de imagen -->
