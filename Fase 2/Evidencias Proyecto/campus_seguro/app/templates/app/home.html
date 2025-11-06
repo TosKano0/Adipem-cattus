@@ -26,7 +26,7 @@
   <div class="container py-5">
     <div class="row justify-content-center">
       <div class="col-lg-6">
-        <!-- Mensajes (éxito/error) -->
+
         {% if messages %}
           <div class="mb-3">
             {% for message in messages %}
@@ -41,7 +41,6 @@
           <div class="card-body p-4">
             <h2 class="h4 mb-4 text-center">Registro de Usuario</h2>
 
-            <!-- Errores no asociados a un campo -->
             {% if form.non_field_errors %}
               <div class="alert alert-danger">
                 {{ form.non_field_errors }}
@@ -53,22 +52,22 @@
 
               <!-- Nombre -->
               <div class="mb-3">
-                <label for="id_nombre" class="form-label">Nombre *</label>
-                {{ form.nombre }}
-                {% if form.nombre.errors %}
+                <label for="id_first_name" class="form-label">Nombre *</label>
+                {{ form.first_name }}
+                {% if form.first_name.errors %}
                   <div class="invalid-feedback d-block">
-                    {{ form.nombre.errors|striptags }}
+                    {{ form.first_name.errors|striptags }}
                   </div>
                 {% endif %}
               </div>
 
               <!-- Apellido -->
               <div class="mb-3">
-                <label for="id_apellido" class="form-label">Apellido *</label>
-                {{ form.apellido }}
-                {% if form.apellido.errors %}
+                <label for="id_last_name" class="form-label">Apellido *</label>
+                {{ form.last_name }}
+                {% if form.last_name.errors %}
                   <div class="invalid-feedback d-block">
-                    {{ form.apellido.errors|striptags }}
+                    {{ form.last_name.errors|striptags }}
                   </div>
                 {% endif %}
               </div>
@@ -84,14 +83,25 @@
                 {% endif %}
               </div>
 
-              <!-- Password -->
+              <!-- Password 1 -->
               <div class="mb-3">
-                <label for="id_password" class="form-label">Contraseña *</label>
-                {{ form.password }}
-                <div class="form-text">Mínimo 6 caracteres.</div>
-                {% if form.password.errors %}
+                <label for="id_password1" class="form-label">Contraseña *</label>
+                {{ form.password1 }}
+                <div class="form-text">Mínimo 8 caracteres (números y letras).</div>
+                {% if form.password1.errors %}
                   <div class="invalid-feedback d-block">
-                    {{ form.password.errors|striptags }}
+                    {{ form.password1.errors|striptags }}
+                  </div>
+                {% endif %}
+              </div>
+
+              <!-- Password 2 -->
+              <div class="mb-3">
+                <label for="id_password2" class="form-label">Confirmar contraseña *</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.password2.errors|striptags }}
                   </div>
                 {% endif %}
               </div>

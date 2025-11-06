@@ -1,6 +1,7 @@
 # app/models.py
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.auth.models import AbstractUser
 
 class Reporte(models.Model):
     titulo = models.CharField(max_length=100)
@@ -14,7 +15,7 @@ class Reporte(models.Model):
 
     # 👇 Campo obligatorio: quién creó el reporte
     usuario = models.ForeignKey(
-        'RegistroUsuario',
+        'Usuario',
         on_delete=models.CASCADE,
         related_name='reportes_creados'
     )
@@ -34,7 +35,7 @@ class Reporte(models.Model):
 
     # 👇 Opcional: asignado a un usuario de mantenimiento
     asignado_a = models.ForeignKey(
-        'RegistroUsuario',
+        'Usuario',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -45,7 +46,7 @@ class Reporte(models.Model):
         return self.titulo
 
 
-class RegistroUsuario(models.Model):
+class Usuario(AbstractUser):
     GENERO_CHOICES = [
         ("Masculino", "Masculino"),
         ("Femenino", "Femenino"),
@@ -57,18 +58,21 @@ class RegistroUsuario(models.Model):
         ("mantenimiento", "Mantenimiento"),
     ]
 
-    nombre = models.CharField(max_length=100)
-    apellido = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-    password = models.CharField(max_length=128)  # reemplazar por hash si luego ocupamos (auth)
-    edad = models.PositiveSmallIntegerField()
-    genero = models.CharField(max_length=12, choices=GENERO_CHOICES)
-    nombre_rol = models.CharField(max_length=20, choices=ROL_CHOICES)
+    # AbstractUser ya trae: username, first_name, last_name, email, password, is_staff, is_superuser, etc.
+    # Añade tus campos propios:
+    edad = models.PositiveSmallIntegerField(null=True, blank=True)
+    genero = models.CharField(max_length=12, choices=GENERO_CHOICES, blank=True)
+    nombre_rol = models.CharField(max_length=20, choices=ROL_CHOICES, default="usuario")
 
-    creado_en = models.DateTimeField(auto_now_add=True)
+    # Si quieres que el email sea único:
+    class Meta:
+        verbose_name = "Usuario"
+        verbose_name_plural = "Usuarios"
 
-    def __str__(self):
-        return f"{self.nombre} {self.apellido} ({self.email})"
+    # Si quieres forzar email único:
+    # def save(self, *args, **kwargs):
+    #     self.email = (self.email or "").lower()
+    #     return super().save(*args, **kwargs)
 
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100)

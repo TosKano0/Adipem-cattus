@@ -5,10 +5,10 @@ from django.contrib import messages
 from django.db.models import Q
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from .forms import PisoForm, ReporteForm, RegistroUsuarioForm, CategoriaForm, PrioridadForm, RolForm, GeneroForm, EdificioForm, SalaForm
-from .models import RegistroUsuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala
+from .models import Usuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala
 from django.core.paginator import Paginator
 from django.contrib.auth.hashers import make_password, check_password
-from .models import RegistroUsuario, Reporte
+from .models import Usuario, Reporte
 from .forms import RegistroUsuarioForm, ReporteForm
 
 
@@ -17,13 +17,11 @@ def home(request):
     if request.method == "POST":
         form = RegistroUsuarioForm(request.POST)
         if form.is_valid():
-            usuario = form.save(commit=False)
-            usuario.password = make_password(form.cleaned_data["password"])
-            usuario.save()
-            messages.success(request, "Cuenta creada correctamente. Ahora puedes iniciar sesión.")
-            return redirect("login")
+            form.save()  # crea el usuario con password hasheado
+            messages.success(request, "Usuario registrado correctamente. Ahora puedes iniciar sesión.")
+            return redirect("login")  # ajusta al nombre de tu url de login
         else:
-            messages.error(request, "Por favor corrige los errores del formulario.")
+            messages.error(request, "Revisa los errores del formulario.")
     else:
         form = RegistroUsuarioForm()
     return render(request, "app/home.html", {"form": form})
@@ -43,15 +41,15 @@ def login_view(request):
         password = request.POST.get("password")
 
         try:
-            usuario = RegistroUsuario.objects.get(email=email)
-        except RegistroUsuario.DoesNotExist:
+            usuario = Usuario.objects.get(email=email)
+        except Usuario.DoesNotExist:
             messages.error(request, "El usuario no existe o el correo es incorrecto.")
             return render(request, "app/login.html")
 
         if check_password(password, usuario.password):
             request.session["usuario_id"] = usuario.id
-            request.session["usuario_nombre"] = usuario.nombre
-            messages.success(request, f"Bienvenido {usuario.nombre} 👋")
+            request.session["usuario_nombre"] = usuario.first_name
+            messages.success(request, f"Bienvenido {usuario.first_name} 👋")
             return redirect("usuario_principal")
         else:
             messages.error(request, "Contraseña incorrecta. Intenta nuevamente.")
@@ -69,8 +67,8 @@ def usuario_principal(request):
         return redirect("login")
 
     try:
-        usuario = RegistroUsuario.objects.get(id=usuario_id)
-    except RegistroUsuario.DoesNotExist:
+        usuario = Usuario.objects.get(id=usuario_id)
+    except Usuario.DoesNotExist:
         messages.error(request, "Usuario no encontrado. Por favor, inicia sesión nuevamente.")
         return redirect("login")
 
