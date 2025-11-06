@@ -1,6 +1,6 @@
 # app/forms.py
 from django import forms
-from .models import Reporte
+from .models import Reporte, RegistroUsuario, Categoria, Prioridad, Rol, Genero, Edificio, Piso, Sala
 
 CATEGORIAS = [
     ("Infraestructura", "Infraestructura"),
@@ -51,21 +51,12 @@ class ReporteForm(forms.ModelForm):
         img = self.cleaned_data.get("imagen")
         if not img:
             return img
-        # Tamaño máx ~5MB
         if img.size > 5 * 1024 * 1024:
             raise forms.ValidationError("La imagen no puede superar 5MB.")
-        # Tipo básico
         if hasattr(img, "content_type") and not img.content_type.startswith("image/"):
             raise forms.ValidationError("El archivo debe ser una imagen válida.")
         return img
-from django import forms
-from .models import RegistroUsuario
 
-class RegistroUsuarioForm(forms.ModelForm):
-    password = forms.CharField(
-        widget=forms.PasswordInput(attrs={"placeholder": "Contraseña *"}),
-        min_length=6
-    )
 
 class RegistroUsuarioForm(forms.ModelForm):
     password = forms.CharField(
@@ -84,3 +75,48 @@ class RegistroUsuarioForm(forms.ModelForm):
             "genero": forms.Select(attrs={"class": "form-select"}),
             "nombre_rol": forms.Select(attrs={"class": "form-select"}),
         }
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
+        if not email:
+            raise forms.ValidationError("Este campo es obligatorio.")
+        if not (email.endswith("@duocuc.cl") or email.endswith("@mantenimiento.cl")):
+            raise forms.ValidationError("El correo debe ser de dominio @duocuc.cl o @mantenimiento.cl en caso de ser empleado de mantenimiento.")
+        return email
+
+
+# Formularios de administración
+class CategoriaForm(forms.ModelForm):
+    class Meta:
+        model = Categoria
+        fields = ['nombre']
+
+class PrioridadForm(forms.ModelForm):
+    class Meta:
+        model = Prioridad
+        fields = ['nivel']
+
+class RolForm(forms.ModelForm):
+    class Meta:
+        model = Rol
+        fields = ['nombre_rol']
+
+class GeneroForm(forms.ModelForm):
+    class Meta:
+        model = Genero
+        fields = ['genero']
+
+class EdificioForm(forms.ModelForm):
+    class Meta:
+        model = Edificio
+        fields = ['nombre', 'codigo']
+
+class PisoForm(forms.ModelForm):
+    class Meta:
+        model = Piso
+        fields = ['edificio', 'numero', 'etiqueta']
+
+class SalaForm(forms.ModelForm):
+    class Meta:
+        model = Sala
+        fields = ['piso', 'codigo', 'nombre']
