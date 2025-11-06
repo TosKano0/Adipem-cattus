@@ -53,10 +53,8 @@ class ReporteForm(forms.ModelForm):
         img = self.cleaned_data.get("imagen")
         if not img:
             return img
-        # Tamaño máx ~5MB
         if img.size > 5 * 1024 * 1024:
             raise forms.ValidationError("La imagen no puede superar 5MB.")
-        # Tipo básico
         if hasattr(img, "content_type") and not img.content_type.startswith("image/"):
             raise forms.ValidationError("El archivo debe ser una imagen válida.")
         return img

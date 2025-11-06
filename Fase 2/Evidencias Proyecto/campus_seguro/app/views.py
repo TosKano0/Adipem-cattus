@@ -1,12 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
+from .models import Usuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala
 from django.core.paginator import Paginator
 from django.contrib import messages
 from django.db.models import Q
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from .forms import PisoForm, ReporteForm, RegistroUsuarioForm, CategoriaForm, PrioridadForm, RolForm, GeneroForm, EdificioForm, SalaForm
-from .models import Usuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala
-from django.core.paginator import Paginator
+from .models import RegistroUsuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala, Reporte
 from django.contrib.auth.hashers import make_password, check_password
 from .models import Usuario, Reporte
 from .forms import RegistroUsuarioForm, ReporteForm
@@ -77,6 +77,77 @@ def usuario_principal(request):
         "page_obj": page_obj
     })
 
+
+# 👇 NUEVA VISTA: Dashboard de Mantenimiento
+def mantenimiento(request):
+    usuario_id = request.session.get("usuario_id")
+
+    # Protección: redirigir si no hay sesión
+    if not usuario_id:
+        messages.warning(request, "Debes iniciar sesión para acceder a esta página.")
+        return redirect("login")
+
+    try:
+        usuario = RegistroUsuario.objects.get(id=usuario_id)
+    except RegistroUsuario.DoesNotExist:
+        messages.error(request, "Usuario no encontrado.")
+        return redirect("login")
+
+    # Verificar que sea de mantenimiento
+    if usuario.nombre_rol != "mantenimiento":
+        messages.error(request, "Acceso denegado. Solo para personal de mantenimiento.")
+        return redirect("usuario_principal")
+
+    # Filtrar reportes asignados a este usuario de mantenimiento
+    reportes = Reporte.objects.filter(asignado_a_id=usuario_id).order_by('-created')
+
+    # Búsqueda y filtros (opcional)
+    busqueda = request.GET.get('busqueda', '').strip()
+    estado_filtro = request.GET.get('estado', 'todos')
+    prioridad_filtro = request.GET.get('prioridad', 'todas')
+
+    if busqueda:
+        reportes = reportes.filter(
+            Q(titulo__icontains=busqueda) |
+            Q(descripcion__icontains=busqueda) |
+            Q(ubicacion__icontains=busqueda)
+        )
+
+    if estado_filtro != 'todos':
+        reportes = reportes.filter(estado=estado_filtro)
+
+    if prioridad_filtro != 'todas':
+        reportes = reportes.filter(prioridad=prioridad_filtro)
+
+    # Contadores para tarjetas (opcional)
+    total = reportes.count()
+    pendientes = reportes.filter(estado='pendiente').count()
+    en_proceso = reportes.filter(estado='en_proceso').count()
+    pausados = reportes.filter(estado='pausado').count()
+    completados = reportes.filter(estado='completado').count()
+
+    # Paginación
+    paginator = Paginator(reportes, 10)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "usuario": usuario,
+        "reportes": page_obj,
+        "page_obj": page_obj,
+        "total": total,
+        "pendientes": pendientes,
+        "en_proceso": en_proceso,
+        "pausados": pausados,
+        "completados": completados,
+        "busqueda": busqueda,
+        "estado_filtro": estado_filtro,
+        "prioridad_filtro": prioridad_filtro,
+    }
+
+    return render(request, "app/mantenimiento_dashboard.html", context)
+
+
 # 4 CERRAR SESIÓN
 def logout_view(request):
     logout(request)
@@ -100,36 +171,44 @@ def formulario_reporte(request):
 
     return render(request, "app/form_reporte.html", {"form": form})
 
+
 def administrador(request):
     return render(request, "app/administrador.html")
 
+
 def admin_ubicacion(request):
     return render(request, "app/admin_ubicacion.html")
+
 
 class CategoriaListView(ListView):
     model = Categoria
     paginate_by = 10
     template_name = "app/list_categoria.html"
 
+
 class PrioridadListView(ListView):
     model = Prioridad
     paginate_by = 10
     template_name = "app/list_prioridad.html"
+
 
 class RolListView(ListView):
     model = Rol
     paginate_by = 10
     template_name = "app/list_rol.html"
 
+
 class GeneroListView(ListView):
     model = Genero
     paginate_by = 10
     template_name = "app/list_genero.html"
 
+
 class EdificioListView(ListView):
     model = Edificio
     paginate_by = 10
     template_name = "app/list_edificio.html"
+
 
 class PisoListView(ListView):
     model = Piso
@@ -143,6 +222,7 @@ class PisoListView(ListView):
             qs = qs.filter(edificio__id=b)
         return qs
 
+
 class SalaListView(ListView):
     model = Sala
     paginate_by = 10
@@ -154,6 +234,11 @@ class SalaListView(ListView):
         if q:
             qs = qs.filter(Q(codigo__icontains=q) | Q(nombre__icontains=q) | Q(edificio__nombre__icontains=q) | Q(piso__etiqueta__icontains=q))
         return qs
+
+
+# === Vistas basadas en clases (Create, Update, Delete) ===
+# ... (todas tus CBVs permanecen igual y están bien) ...
+# (No las repetí para no alargar, pero ya están en tu código)
 
 class CategoriaCreateView(CreateView):
     model = Categoria
