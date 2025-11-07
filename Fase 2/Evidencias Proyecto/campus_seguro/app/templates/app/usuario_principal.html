@@ -300,7 +300,7 @@
 
         {% if request.user.is_authenticated %}
             {% if request.user.nombre_rol == "mantenimiento"%}
-                <a href="" class="btn btn-warning">Panel mantencion</a>
+                <a href="{% url 'mantenimiento' %}" class="btn btn-warning">Panel mantenimiento</a>
             {% endif %}
         {% endif %}
     </div>

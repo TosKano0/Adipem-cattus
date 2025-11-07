@@ -1,19 +1,13 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
-from .models import Usuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala
+from .models import Usuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala, Reporte
 from django.core.paginator import Paginator
 from django.contrib import messages
 from django.db.models import Q
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from .forms import PisoForm, ReporteForm, RegistroUsuarioForm, CategoriaForm, PrioridadForm, RolForm, GeneroForm, EdificioForm, SalaForm
-from .models import Usuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala, Reporte
-from django.contrib.auth.hashers import make_password, check_password
-from .models import Usuario, Reporte
-from .forms import RegistroUsuarioForm, ReporteForm
-from django.contrib.auth import authenticate, login, logout, get_user_model
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-
-User = get_user_model()
 
 # 1 REGISTRO DE NUEVO USUARIO (home.html)
 def home(request):
@@ -33,6 +27,7 @@ def home(request):
 
     return render(request, "app/home.html", {"form": form})
 
+
 # 2 INICIO DE SESIÓN (login.html)
 def login_view(request):
     if request.user.is_authenticated:
@@ -44,21 +39,22 @@ def login_view(request):
 
         user = None
 
-        # 1) Intenta autenticar asumiendo que el identificador es el username
-        user = authenticate(request, username=identificador, password=password)
-
-        if user is None:
-            # 2) Si no funcionó, intenta tratar el identificador como EMAIL
-            u = User.objects.filter(email__iexact=identificador).first()
-            if u:
-                user = authenticate(request, username=u.username, password=password)
+        # 1) Intenta autenticar con email
+        u = Usuario.objects.filter(email__iexact=identificador).first()
+        if u:
+            user = authenticate(request, username=u.username, password=password)
 
         if user is not None and user.is_active:
             login(request, user)
             messages.success(request, f"Bienvenido {user.first_name or user.username} 👋")
-            return redirect("usuario_principal")
-
-        messages.error(request, "Credenciales inválidas.")
+            
+            # Redirección por rol
+            if user.nombre_rol == "mantenimiento":
+                return redirect("mantenimiento")
+            else:
+                return redirect("usuario_principal")
+        else:
+            messages.error(request, "Credenciales inválidas.")
 
     return render(request, "app/login.html")
 
@@ -67,7 +63,7 @@ def login_view(request):
 @login_required
 def usuario_principal(request):
     reportes = Reporte.objects.filter(usuario=request.user).order_by('-created')
-
+    
     paginator = Paginator(reportes, 4)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
@@ -78,30 +74,18 @@ def usuario_principal(request):
     })
 
 
-# 👇 NUEVA VISTA: Dashboard de Mantenimiento
+# 👇 VISTA CORREGIDA: Dashboard de Mantenimiento
+@login_required
 def mantenimiento(request):
-    usuario_id = request.session.get("usuario_id")
-
-    # Protección: redirigir si no hay sesión
-    if not usuario_id:
-        messages.warning(request, "Debes iniciar sesión para acceder a esta página.")
-        return redirect("login")
-
-    try:
-        usuario = Usuario.objects.get(id=usuario_id)
-    except Usuario.DoesNotExist:
-        messages.error(request, "Usuario no encontrado.")
-        return redirect("login")
-
-    # Verificar que sea de mantenimiento
-    if usuario.nombre_rol != "mantenimiento":
+    # Verifica que el usuario sea de mantenimiento
+    if request.user.nombre_rol != "mantenimiento":
         messages.error(request, "Acceso denegado. Solo para personal de mantenimiento.")
         return redirect("usuario_principal")
 
-    # Filtrar reportes asignados a este usuario de mantenimiento
-    reportes = Reporte.objects.filter(asignado_a_id=usuario_id).order_by('-created')
+    # Filtra reportes asignados a este usuario
+    reportes = Reporte.objects.filter(asignado_a=request.user).order_by('-created')
 
-    # Búsqueda y filtros (opcional)
+    # Búsqueda y filtros
     busqueda = request.GET.get('busqueda', '').strip()
     estado_filtro = request.GET.get('estado', 'todos')
     prioridad_filtro = request.GET.get('prioridad', 'todas')
@@ -112,14 +96,12 @@ def mantenimiento(request):
             Q(descripcion__icontains=busqueda) |
             Q(ubicacion__icontains=busqueda)
         )
-
     if estado_filtro != 'todos':
         reportes = reportes.filter(estado=estado_filtro)
-
     if prioridad_filtro != 'todas':
         reportes = reportes.filter(prioridad=prioridad_filtro)
 
-    # Contadores para tarjetas (opcional)
+    # Contadores
     total = reportes.count()
     pendientes = reportes.filter(estado='pendiente').count()
     en_proceso = reportes.filter(estado='en_proceso').count()
@@ -132,7 +114,6 @@ def mantenimiento(request):
     page_obj = paginator.get_page(page_number)
 
     context = {
-        "usuario": usuario,
         "reportes": page_obj,
         "page_obj": page_obj,
         "total": total,
@@ -154,6 +135,7 @@ def logout_view(request):
     messages.info(request, "Has cerrado sesión correctamente.")
     return redirect("login")
 
+
 # 5 FORMULARIO DE REPORTE
 @login_required
 def formulario_reporte(request):
@@ -172,9 +154,9 @@ def formulario_reporte(request):
     return render(request, "app/form_reporte.html", {"form": form})
 
 
+# Vistas de administración (sin cambios)
 def administrador(request):
     return render(request, "app/administrador.html")
-
 
 def admin_ubicacion(request):
     return render(request, "app/admin_ubicacion.html")

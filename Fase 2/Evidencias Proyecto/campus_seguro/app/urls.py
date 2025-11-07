@@ -14,7 +14,7 @@ urlpatterns = [
     path("usuario_principal/", views.usuario_principal, name="usuario_principal"),
 
     # 👇 NUEVO: Dashboard de mantenimiento
-    path("mantenimiento_dashboard/", views.mantenimiento, name="mantenimiento_dashboard"),
+    path("mantenimiento_dashboard/", views.mantenimiento, name="mantenimiento"),
 
     # 4. Cierre de sesión
     path("logout/", views.logout_view, name="logout"),
