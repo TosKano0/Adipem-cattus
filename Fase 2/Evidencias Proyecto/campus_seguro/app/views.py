@@ -8,6 +8,42 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from .forms import PisoForm, ReporteForm, RegistroUsuarioForm, CategoriaForm, PrioridadForm, RolForm, GeneroForm, EdificioForm, SalaForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from functools import wraps   # 👈 Agregado aquí
+
+# ===========================================
+# DECORADOR DE CONTROL DE ROLES
+# ===========================================
+
+
+def rol_requerido(roles_permitidos):
+    def decorador(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            if not request.user.is_authenticated:
+                messages.warning(request, "Debes iniciar sesión.")
+                return redirect("login")
+
+            if request.user.nombre_rol not in roles_permitidos:
+                messages.error(request, "Acceso denegado: no tienes permiso para ver esta página.")
+                
+                # Redirección personalizada según el rol del usuario actual
+                if request.user.nombre_rol == "administracion":
+                    return redirect("administrador")
+                elif request.user.nombre_rol == "mantenimiento":
+                    return redirect("mantenimiento")
+                elif request.user.nombre_rol == "usuario":
+                    return redirect("usuario_principal")
+                else:
+                    # Si el rol no está definido o es inválido
+                    logout(request)
+                    return redirect("login")
+
+            return view_func(request, *args, **kwargs)
+        return wrapper
+    return decorador
+
+    ...
+
 
 # 1 REGISTRO DE NUEVO USUARIO (home.html)
 def home(request):
@@ -29,17 +65,31 @@ def home(request):
 
 
 # 2 INICIO DE SESIÓN (login.html)
+# ===========================================
+#  INICIO DE SESIÓN CON CONTROL DE ROL
+# ===========================================
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect("usuario_principal")
+        # Evita redirigir si el usuario no tiene rol definido o sesión dañada
+        if not hasattr(request.user, "nombre_rol") or not request.user.nombre_rol:
+            logout(request)
+            return redirect("login")
+
+        # Redirección automática según rol
+        if request.user.nombre_rol == "administracion":
+            return redirect("administrador")
+        elif request.user.nombre_rol == "mantenimiento":
+            return redirect("mantenimiento")
+        else:
+            return redirect("usuario_principal")
+
 
     if request.method == "POST":
         identificador = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
-
         user = None
 
-        # 1) Intenta autenticar con email
+        # Buscar usuario por email
         u = Usuario.objects.filter(email__iexact=identificador).first()
         if u:
             user = authenticate(request, username=u.username, password=password)
@@ -47,19 +97,22 @@ def login_view(request):
         if user is not None and user.is_active:
             login(request, user)
             messages.success(request, f"Bienvenido {user.first_name or user.username} 👋")
-            
+
             # Redirección por rol
-            if user.nombre_rol == "mantenimiento":
+            if user.nombre_rol == "administracion":
+                return redirect("administrador")
+            elif user.nombre_rol == "mantenimiento":
                 return redirect("mantenimiento")
             else:
                 return redirect("usuario_principal")
         else:
-            messages.error(request, "Credenciales inválidas.")
+            messages.error(request, "Correo o contraseña incorrectos.")
 
     return render(request, "app/login.html")
 
 
 # 3 PANEL PRINCIPAL (usuario_principal.html)
+@rol_requerido(["usuario"])
 @login_required
 def usuario_principal(request):
     reportes = Reporte.objects.filter(usuario=request.user).order_by('-created')
@@ -75,6 +128,7 @@ def usuario_principal(request):
 
 
 # 👇 VISTA CORREGIDA: Dashboard de Mantenimiento
+@rol_requerido(["mantenimiento"])
 @login_required
 def mantenimiento(request):
     # Verifica que el usuario sea de mantenimiento
@@ -154,44 +208,63 @@ def formulario_reporte(request):
     return render(request, "app/form_reporte.html", {"form": form})
 
 
-# Vistas de administración (sin cambios)
+
+# ===========================================
+# Vistas de administración protegidas
+# ===========================================
+
+from django.utils.decorators import method_decorator
+
+@rol_requerido(["administracion"])
+@login_required
 def administrador(request):
     return render(request, "app/administrador.html")
 
+@rol_requerido(["administracion"])
+@login_required
 def admin_ubicacion(request):
     return render(request, "app/admin_ubicacion.html")
 
 
+# === Vistas de Listado protegidas por rol Administracion ===
+
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class CategoriaListView(ListView):
     model = Categoria
     paginate_by = 10
     template_name = "app/list_categoria.html"
 
-
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class PrioridadListView(ListView):
     model = Prioridad
     paginate_by = 10
     template_name = "app/list_prioridad.html"
 
-
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class RolListView(ListView):
     model = Rol
     paginate_by = 10
     template_name = "app/list_rol.html"
 
-
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class GeneroListView(ListView):
     model = Genero
     paginate_by = 10
     template_name = "app/list_genero.html"
 
-
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class EdificioListView(ListView):
     model = Edificio
     paginate_by = 10
     template_name = "app/list_edificio.html"
 
-
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class PisoListView(ListView):
     model = Piso
     paginate_by = 10
@@ -204,7 +277,8 @@ class PisoListView(ListView):
             qs = qs.filter(edificio__id=b)
         return qs
 
-
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class SalaListView(ListView):
     model = Sala
     paginate_by = 10
@@ -214,9 +288,72 @@ class SalaListView(ListView):
         qs = super().get_queryset().select_related("edificio", "piso", "piso__edificio")
         q = self.request.GET.get("q")
         if q:
-            qs = qs.filter(Q(codigo__icontains=q) | Q(nombre__icontains=q) | Q(edificio__nombre__icontains=q) | Q(piso__etiqueta__icontains=q))
+            qs = qs.filter(
+                Q(codigo__icontains=q) |
+                Q(nombre__icontains=q) |
+                Q(edificio__nombre__icontains=q) |
+                Q(piso__etiqueta__icontains=q)
+            )
         return qs
 
+
+# === Create / Update / Delete protegidas también ===
+
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
+class CategoriaCreateView(CreateView):
+    model = Categoria
+    form_class = CategoriaForm
+    template_name = "app/form_categoria.html"
+    success_url = reverse_lazy("categoria-list")
+
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
+class PrioridadCreateView(CreateView):
+    model = Prioridad
+    form_class = PrioridadForm
+    template_name = "app/form_prioridad.html"
+    success_url = reverse_lazy("prioridad-list")
+
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
+class RolCreateView(CreateView):
+    model = Rol
+    form_class = RolForm
+    template_name = "app/form_rol.html"
+    success_url = reverse_lazy("rol-list")
+
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
+class GeneroCreateView(CreateView):
+    model = Genero
+    form_class = GeneroForm
+    template_name = "app/form_genero.html"
+    success_url = reverse_lazy("genero-list")
+
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
+class EdificioCreateView(CreateView):
+    model = Edificio
+    form_class = EdificioForm
+    template_name = "app/form_edificio.html"
+    success_url = reverse_lazy("edificio-list")
+
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
+class PisoCreateView(CreateView):
+    model = Piso
+    form_class = PisoForm
+    template_name = "app/form_piso.html"
+    success_url = reverse_lazy("piso-list")
+
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
+class SalaCreateView(CreateView):
+    model = Sala
+    form_class = SalaForm
+    template_name = "app/form_sala.html"
+    success_url = reverse_lazy("sala-list")
 
 # === Vistas basadas en clases (Create, Update, Delete) ===
 # ... (todas tus CBVs permanecen igual y están bien) ...

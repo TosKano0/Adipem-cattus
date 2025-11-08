@@ -151,3 +151,25 @@ class Sala(models.Model):
 
     def __str__(self):
         return f"{self.codigo} — {self.edificio.codigo.upper()} (Piso {self.piso.numero})"
+    
+
+
+class Sala(models.Model):
+    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name="salas")
+    piso = models.ForeignKey(Piso, on_delete=models.CASCADE, related_name="salas")
+    codigo = models.CharField(max_length=50)
+    nombre = models.CharField(max_length=120, blank=True)
+
+    class Meta:
+        ordering = ["edificio", "piso__numero", "codigo"]
+        constraints = [
+            models.UniqueConstraint(fields=["edificio", "codigo"], name="codigo_sala_unico_por_edificio"),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.piso_id:
+            self.edificio = self.piso.edificio
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.codigo} — {self.edificio.codigo.upper()} (Piso {self.piso.numero})"
