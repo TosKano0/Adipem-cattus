@@ -28,7 +28,7 @@ def rol_requerido(roles_permitidos):
                 
                 # Redirección personalizada según el rol del usuario actual
                 if request.user.nombre_rol == "administracion":
-                    return redirect("administrador")
+                    return redirect("admin")
                 elif request.user.nombre_rol == "mantenimiento":
                     return redirect("mantenimiento")
                 elif request.user.nombre_rol == "usuario":
@@ -77,7 +77,7 @@ def login_view(request):
 
         # Redirección automática según rol
         if request.user.nombre_rol == "administracion":
-            return redirect("administrador")
+            return redirect("admin")
         elif request.user.nombre_rol == "mantenimiento":
             return redirect("mantenimiento")
         else:
