@@ -270,7 +270,7 @@
                     <p>Gestión de Reportes</p>
                 {% endif %}
             </div>
-            <a href="/" class="logout-btn">Cerrar Sesión</a>
+            <a href="{% url 'logout' %}" class="logout-btn">Cerrar Sesión</a>
         </div>
 
         <!-- Tarjetas resumen -->
@@ -368,7 +368,7 @@
                             <strong>{{ r.titulo }}</strong><br>
                             <small>{{ r.descripcion|truncatechars:50 }}</small>
                         </td>
-                        <td>{{ r.usuario.nombre }} {{ r.usuario.apellido }}</td>
+                        <td>{{ r.usuario.first_name }} {{ r.usuario.last_name }}</td>
                         <td>{{ r.ubicacion }}</td>
                         <td>
                             {% if r.prioridad == 'Alta' %}
@@ -392,7 +392,7 @@
                         </td>
                         <td>
                             {% if r.asignado_a %}
-                                {{ r.asignado_a.nombre }} {{ r.asignado_a.apellido }}
+                                {{ r.asignado_a.first_name }} {{ r.asignado_a.last_name }}
                             {% else %}
                                 Sin asignar
                             {% endif %}

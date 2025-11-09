@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from .models import Usuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala, Reporte
 from django.core.paginator import Paginator
@@ -9,6 +9,8 @@ from .forms import PisoForm, ReporteForm, RegistroUsuarioForm, CategoriaForm, Pr
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from functools import wraps   # 👈 Agregado aquí
+from django.contrib.auth import get_user_model
+from django.http import JsonResponse, HttpResponseForbidden
 
 # ===========================================
 # DECORADOR DE CONTROL DE ROLES
@@ -224,6 +226,8 @@ def admin(request):
     busqueda = request.GET.get('busqueda', '').strip()
     estado_filtro = request.GET.get('estado', 'todos')
     prioridad_filtro = request.GET.get('prioridad', 'todas')
+    
+    mantenedores = _qs_mantenedores()
 
     if busqueda:
         reportes = reportes.filter(
@@ -259,8 +263,54 @@ def admin(request):
         "busqueda": busqueda,
         "estado_filtro": estado_filtro,
         "prioridad_filtro": prioridad_filtro,
+        "mantenedores": mantenedores,
     }
     return render(request, "app/admin.html", context)
+
+def _qs_mantenedores():
+    return User.objects.filter(nombre_rol__iexact='mantenimiento', is_active=True).order_by('first_name', 'last_name')
+
+User = get_user_model()
+
+@rol_requerido(["administracion"])
+@login_required
+def asignar_mantenedor(request, pk):
+    # Solo deja asignar a staff/superuser (ajusta si tienes decoradores de rol)
+    if not (request.user.is_staff or request.user.is_superuser or request.user.nombre_rol == "administracion"):
+        return HttpResponseForbidden("No autorizado")
+
+    reporte = get_object_or_404(Reporte, pk=pk)
+    asignado_id = request.POST.get('asignado_a')  # puede venir vacío
+
+    # Validar que el usuario seleccionado efectivamente es 'mantenedor'
+    mantenedores = _qs_mantenedores()
+
+    if asignado_id in [None, "", "null"]:
+        reporte.asignado_a = None
+        reporte.save(update_fields=['asignado_a'])
+        asignado_nombre = "Sin asignar"
+    else:
+        try:
+            mantenedor = mantenedores.get(pk=asignado_id)
+        except User.DoesNotExist:
+            return JsonResponse({"ok": False, "error": "Mantenedor inválido."}, status=400)
+
+        reporte.asignado_a = mantenedor
+        # (Opcional) mover a "en_proceso" al asignar
+        if reporte.estado == 'pendiente':
+            reporte.estado = 'en_proceso'
+            reporte.save(update_fields=['asignado_a', 'estado'])
+        else:
+            reporte.save(update_fields=['asignado_a'])
+
+        asignado_nombre = f"{getattr(mantenedor, 'first_name', '')} {getattr(mantenedor, 'last_name', '')}".strip() or mantenedor.get_username()
+
+    return JsonResponse({
+        "ok": True,
+        "reporte_id": reporte.pk,
+        "asignado_nombre": asignado_nombre,
+        "estado": reporte.get_estado_display(),
+    })
 
 @rol_requerido(["administracion"])
 @login_required
