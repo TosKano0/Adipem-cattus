@@ -291,18 +291,6 @@
         <!-- Botón Cerrar sesión -->
         <a href="{% url 'logout' %}" class="btn btn-secondary">Cerrar sesión</a>
 
-        {% if request.user.is_authenticated %}
-            {% if request.user.is_staff or request.user.is_superuser %}
-                <a href="{% url 'administrador' %}" class="btn btn-warning">Panel administrativo</a>
-            {% endif %}
-        {% endif %}
-    </div>
-
-        {% if request.user.is_authenticated %}
-            {% if request.user.nombre_rol == "mantenimiento"%}
-                <a href="{% url 'mantenimiento' %}" class="btn btn-warning">Panel mantenimiento</a>
-            {% endif %}
-        {% endif %}
     </div>
 
     <!-- Script para el modal de imagen -->

@@ -100,7 +100,7 @@ def login_view(request):
 
             # Redirección por rol
             if user.nombre_rol == "administracion":
-                return redirect("administrador")
+                return redirect("admin")
             elif user.nombre_rol == "mantenimiento":
                 return redirect("mantenimiento")
             else:
@@ -217,13 +217,60 @@ from django.utils.decorators import method_decorator
 
 @rol_requerido(["administracion"])
 @login_required
-def administrador(request):
-    return render(request, "app/administrador.html")
+def admin(request): 
+    reportes = Reporte.objects.all().order_by('-created')
+
+    # Búsqueda y filtros
+    busqueda = request.GET.get('busqueda', '').strip()
+    estado_filtro = request.GET.get('estado', 'todos')
+    prioridad_filtro = request.GET.get('prioridad', 'todas')
+
+    if busqueda:
+        reportes = reportes.filter(
+            Q(titulo__icontains=busqueda) |
+            Q(descripcion__icontains=busqueda) |
+            Q(ubicacion__icontains=busqueda)
+        )
+    if estado_filtro != 'todos':
+        reportes = reportes.filter(estado=estado_filtro)
+    if prioridad_filtro != 'todas':
+        reportes = reportes.filter(prioridad=prioridad_filtro)
+
+    # Contadores
+    total = reportes.count()
+    pendientes = reportes.filter(estado='pendiente').count()
+    en_proceso = reportes.filter(estado='en_proceso').count()
+    pausados = reportes.filter(estado='pausado').count()
+    completados = reportes.filter(estado='completado').count()
+
+    # Paginación
+    paginator = Paginator(reportes, 10)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "reportes": page_obj,
+        "page_obj": page_obj,
+        "total": total,
+        "pendientes": pendientes,
+        "en_proceso": en_proceso,
+        "pausados": pausados,
+        "completados": completados,
+        "busqueda": busqueda,
+        "estado_filtro": estado_filtro,
+        "prioridad_filtro": prioridad_filtro,
+    }
+    return render(request, "app/admin.html", context)
 
 @rol_requerido(["administracion"])
 @login_required
-def admin_ubicacion(request):
-    return render(request, "app/admin_ubicacion.html")
+def panel_admin(request):
+    return render(request, "app/panel_admin.html")
+
+@rol_requerido(["administracion"])
+@login_required
+def panel_admin_ubicacion(request):
+    return render(request, "app/panel_admin_ubicacion.html")
 
 
 # === Vistas de Listado protegidas por rol Administracion ===
@@ -355,124 +402,106 @@ class SalaCreateView(CreateView):
     template_name = "app/form_sala.html"
     success_url = reverse_lazy("sala-list")
 
-# === Vistas basadas en clases (Create, Update, Delete) ===
-# ... (todas tus CBVs permanecen igual y están bien) ...
-# (No las repetí para no alargar, pero ya están en tu código)
-
-class CategoriaCreateView(CreateView):
-    model = Categoria
-    form_class = CategoriaForm
-    template_name = "app/form_categoria.html"
-    success_url = reverse_lazy("categoria-list")
-
-class PrioridadCreateView(CreateView):
-    model = Prioridad
-    form_class = PrioridadForm
-    template_name = "app/form_prioridad.html"
-    success_url = reverse_lazy("prioridad-list")
-
-class RolCreateView(CreateView):
-    model = Rol
-    form_class = RolForm
-    template_name = "app/form_rol.html"
-    success_url = reverse_lazy("rol-list")
-
-class GeneroCreateView(CreateView):
-    model = Genero
-    form_class = GeneroForm
-    template_name = "app/form_genero.html"
-    success_url = reverse_lazy("genero-list")
-
-class EdificioCreateView(CreateView):
-    model = Edificio
-    form_class = EdificioForm
-    template_name = "app/form_edificio.html"
-    success_url = reverse_lazy("edificio-list")
-
-class PisoCreateView(CreateView):
-    model = Piso
-    form_class = PisoForm
-    template_name = "app/form_piso.html"
-    success_url = reverse_lazy("piso-list")
-
-class SalaCreateView(CreateView):
-    model = Sala
-    form_class = SalaForm
-    template_name = "app/form_sala.html"
-    success_url = reverse_lazy("sala-list")
-
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class CategoriaUpdateView(UpdateView):
     model = Categoria
     form_class = CategoriaForm
     template_name = "app/form_categoria.html"
     success_url = reverse_lazy("categoria-list")
 
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class PrioridadUpdateView(UpdateView):
     model = Prioridad
     form_class = PrioridadForm
     template_name = "app/form_prioridad.html"
     success_url = reverse_lazy("prioridad-list")
 
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class RolUpdateView(UpdateView):
     model = Rol
     form_class = RolForm
     template_name = "app/form_rol.html"
     success_url = reverse_lazy("rol-list")
 
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class GeneroUpdateView(UpdateView):
     model = Genero
     form_class = GeneroForm
     template_name = "app/form_genero.html"
     success_url = reverse_lazy("genero-list")
 
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class EdificioUpdateView(UpdateView):
     model = Edificio
     form_class = EdificioForm
     template_name = "app/form_edificio.html"
     success_url = reverse_lazy("edificio-list")
 
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class PisoUpdateView(UpdateView):
     model = Piso
     form_class = PisoForm
     template_name = "app/form_piso.html"
     success_url = reverse_lazy("piso-list")
 
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class SalaUpdateView(UpdateView):
     model = Sala
     form_class = SalaForm
     template_name = "app/form_sala.html"
     success_url = reverse_lazy("sala-list")
 
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class CategoriaDeleteView(DeleteView):
     model = Categoria
     template_name = "app/confirm_delete.html"
     success_url = reverse_lazy("categoria-list")
 
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class PrioridadDeleteView(DeleteView):
     model = Prioridad
     template_name = "app/confirm_delete.html"
     success_url = reverse_lazy("prioridad-list")
 
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class RolDeleteView(DeleteView):
     model = Rol
     template_name = "app/confirm_delete.html"
     success_url = reverse_lazy("rol-list")
 
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class GeneroDeleteView(DeleteView):
     model = Genero
     template_name = "app/confirm_delete.html"
     success_url = reverse_lazy("genero-list")
 
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class EdificioDeleteView(DeleteView):
     model = Edificio
     template_name = "app/confirm_delete.html"
     success_url = reverse_lazy("edificio-list")
 
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class PisoDeleteView(DeleteView):
     model = Piso
     template_name = "app/confirm_delete.html"
     success_url = reverse_lazy("piso-list")
 
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class SalaDeleteView(DeleteView):
     model = Sala
     template_name = "app/confirm_delete.html"
