@@ -11,10 +11,8 @@ from django.contrib.auth.decorators import login_required
 from functools import wraps   # 👈 Agregado aquí
 
 # ===========================================
-# DECORADOR DE CONTROL DE ROLES
+# DECORADOR DE CONTROL DE ROLES (CORREGIDO)
 # ===========================================
-
-
 def rol_requerido(roles_permitidos):
     def decorador(view_func):
         @wraps(view_func)
@@ -24,19 +22,15 @@ def rol_requerido(roles_permitidos):
                 return redirect("login")
 
             if request.user.nombre_rol not in roles_permitidos:
+                # ✅ Agregar mensaje SOLO si el usuario no tiene permiso
                 messages.error(request, "Acceso denegado: no tienes permiso para ver esta página.")
-                
-                # Redirección personalizada según el rol del usuario actual
-                if request.user.nombre_rol == "administracion":
-                    return redirect("admin")
-                elif request.user.nombre_rol == "mantenimiento":
+                # Redirección personalizada según el rol actual
+                if request.user.nombre_rol == "mantenimiento":
                     return redirect("mantenimiento")
-                elif request.user.nombre_rol == "usuario":
-                    return redirect("usuario_principal")
+                elif request.user.nombre_rol == "administracion":
+                    return redirect("admin")
                 else:
-                    # Si el rol no está definido o es inválido
-                    logout(request)
-                    return redirect("login")
+                    return redirect("usuario_principal")
 
             return view_func(request, *args, **kwargs)
         return wrapper
@@ -48,7 +42,13 @@ def rol_requerido(roles_permitidos):
 # 1 REGISTRO DE NUEVO USUARIO (home.html)
 def home(request):
     if request.user.is_authenticated:
-        return redirect("usuario_principal")
+        # Redirigir según rol
+        if request.user.nombre_rol == "administracion":
+            return redirect("admin")
+        elif request.user.nombre_rol == "mantenimiento":
+            return redirect("mantenimiento")
+        else:
+            return redirect("usuario_principal")
 
     if request.method == "POST":
         form = RegistroUsuarioForm(request.POST)
@@ -116,7 +116,6 @@ def login_view(request):
 @login_required
 def usuario_principal(request):
     reportes = Reporte.objects.filter(usuario=request.user).order_by('-created')
-    
     paginator = Paginator(reportes, 4)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
