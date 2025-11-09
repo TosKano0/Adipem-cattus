@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import home, usuario_principal, formulario_reporte, admin, panel_admin, panel_admin_ubicacion, CategoriaListView, CategoriaCreateView, CategoriaUpdateView, CategoriaDeleteView, PrioridadListView, PrioridadCreateView, PrioridadUpdateView, PrioridadDeleteView, RolListView, RolCreateView, RolUpdateView, RolDeleteView, GeneroListView, GeneroCreateView, GeneroUpdateView, GeneroDeleteView, EdificioListView, EdificioCreateView, EdificioUpdateView, EdificioDeleteView, PisoListView, PisoCreateView, PisoUpdateView, PisoDeleteView, SalaListView, SalaCreateView, SalaUpdateView, SalaDeleteView
+from .views import home, usuario_principal, formulario_reporte, admin, asignar_mantenedor, panel_admin, panel_admin_ubicacion, CategoriaListView, CategoriaCreateView, CategoriaUpdateView, CategoriaDeleteView, PrioridadListView, PrioridadCreateView, PrioridadUpdateView, PrioridadDeleteView, RolListView, RolCreateView, RolUpdateView, RolDeleteView, GeneroListView, GeneroCreateView, GeneroUpdateView, GeneroDeleteView, EdificioListView, EdificioCreateView, EdificioUpdateView, EdificioDeleteView, PisoListView, PisoCreateView, PisoUpdateView, PisoDeleteView, SalaListView, SalaCreateView, SalaUpdateView, SalaDeleteView
 
 urlpatterns = [
     # 1. Página inicial → LOGIN
@@ -26,6 +26,8 @@ urlpatterns = [
     path('usuario_principal/', usuario_principal, name="usuario_principal"),
     
     path('administrador/', admin, name="admin"),
+    
+    path('administrador/reportes/<int:pk>/asignar/', asignar_mantenedor, name="asignar-mantenedor"),
     
     path('administrador/panel', panel_admin, name="panel-admin"),
     
