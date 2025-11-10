@@ -8,9 +8,13 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from .forms import PisoForm, ReporteForm, RegistroUsuarioForm, CategoriaForm, PrioridadForm, RolForm, GeneroForm, EdificioForm, SalaForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from functools import wraps   # 👈 Agregado aquí
+from functools import wraps
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse, HttpResponseForbidden
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+
+User = get_user_model()
 
 # ===========================================
 # DECORADOR DE CONTROL DE ROLES (CORREGIDO)
@@ -24,9 +28,7 @@ def rol_requerido(roles_permitidos):
                 return redirect("login")
 
             if request.user.nombre_rol not in roles_permitidos:
-                # ✅ Agregar mensaje SOLO si el usuario no tiene permiso
                 messages.error(request, "Acceso denegado: no tienes permiso para ver esta página.")
-                # Redirección personalizada según el rol actual
                 if request.user.nombre_rol == "mantenimiento":
                     return redirect("mantenimiento")
                 elif request.user.nombre_rol == "administracion":
@@ -38,13 +40,118 @@ def rol_requerido(roles_permitidos):
         return wrapper
     return decorador
 
-    ...
+
+# 👇 NUEVA VISTA: Obtener contadores para el dashboard de mantenimiento
+@login_required
+def obtener_contadores_dashboard(request):
+    if request.user.nombre_rol != "mantenimiento":
+        return JsonResponse({"error": "No autorizado"}, status=403)
+    
+    reportes = Reporte.objects.filter(asignado_a=request.user)
+    contadores = {
+        "total": reportes.count(),
+        "pendientes": reportes.filter(estado="pendiente").count(),
+        "en_proceso": reportes.filter(estado="en_proceso").count(),
+        "pausados": reportes.filter(estado="pausado").count(),
+        "completados": reportes.filter(estado="completado").count(),
+    }
+    return JsonResponse({"success": True, "contadores": contadores})
+
+
+# 👇 NUEVA VISTA: Actualizar estado de reporte
+# 👇 CORREGIDA: El reporte_id viene del POST, no de la URL
+@require_POST
+@login_required
+def actualizar_estado_reporte(request):  # ← Sin reporte_id aquí
+    if request.user.nombre_rol != "mantenimiento":
+        return JsonResponse({"error": "No autorizado"}, status=403)
+    
+    # 👇 Obtenemos el ID desde el cuerpo de la petición POST
+    reporte_id = request.POST.get("reporte_id")
+    if not reporte_id:
+        return JsonResponse({"error": "ID de reporte no proporcionado."}, status=400)
+
+    try:
+        reporte = Reporte.objects.get(id=reporte_id, asignado_a=request.user)
+    except Reporte.DoesNotExist:
+        return JsonResponse({"error": "Reporte no encontrado o no tienes permiso."}, status=404)
+
+    nuevo_estado = request.POST.get("nuevo_estado")
+    if nuevo_estado not in dict(Reporte.ESTADO_CHOICES):
+        return JsonResponse({"error": "Estado no válido."}, status=400)
+
+    reporte.estado = nuevo_estado
+    reporte.save()
+
+    # Obtener los contadores actualizados
+    reportes = Reporte.objects.filter(asignado_a=request.user)
+    contadores = {
+        "total": reportes.count(),
+        "pendientes": reportes.filter(estado="pendiente").count(),
+        "en_proceso": reportes.filter(estado="en_proceso").count(),
+        "pausados": reportes.filter(estado="pausado").count(),
+        "completados": reportes.filter(estado="completado").count(),
+    }
+
+    return JsonResponse({
+        "success": True,
+        "nuevo_estado": reporte.get_estado_display(),
+        "contadores": contadores,
+        "reporte_id": reporte_id,
+    })
+
+
+# 👇 VISTA CORREGIDA: Dashboard de Mantenimiento
+@rol_requerido(["mantenimiento"])
+@login_required
+def mantenimiento(request):
+    # ✅ Elimina la validación manual: el decorador ya la hace
+    reportes = Reporte.objects.filter(asignado_a=request.user).order_by('-created')
+
+    busqueda = request.GET.get('busqueda', '').strip()
+    estado_filtro = request.GET.get('estado', 'todos')
+    prioridad_filtro = request.GET.get('prioridad', 'todas')
+
+    if busqueda:
+        reportes = reportes.filter(
+            Q(titulo__icontains=busqueda) |
+            Q(descripcion__icontains=busqueda) |
+            Q(ubicacion__icontains=busqueda)
+        )
+    if estado_filtro != 'todos':
+        reportes = reportes.filter(estado=estado_filtro)
+    if prioridad_filtro != 'todas':
+        reportes = reportes.filter(prioridad=prioridad_filtro)
+
+    total = reportes.count()
+    pendientes = reportes.filter(estado='pendiente').count()
+    en_proceso = reportes.filter(estado='en_proceso').count()
+    pausados = reportes.filter(estado='pausado').count()
+    completados = reportes.filter(estado='completado').count()
+
+    paginator = Paginator(reportes, 10)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "reportes": page_obj,
+        "page_obj": page_obj,
+        "total": total,
+        "pendientes": pendientes,
+        "en_proceso": en_proceso,
+        "pausados": pausados,
+        "completados": completados,
+        "busqueda": busqueda,
+        "estado_filtro": estado_filtro,
+        "prioridad_filtro": prioridad_filtro,
+    }
+
+    return render(request, "app/mantenimiento_dashboard.html", context)
 
 
 # 1 REGISTRO DE NUEVO USUARIO (home.html)
 def home(request):
     if request.user.is_authenticated:
-        # Redirigir según rol
         if request.user.nombre_rol == "administracion":
             return redirect("admin")
         elif request.user.nombre_rol == "mantenimiento":
@@ -67,17 +174,12 @@ def home(request):
 
 
 # 2 INICIO DE SESIÓN (login.html)
-# ===========================================
-#  INICIO DE SESIÓN CON CONTROL DE ROL
-# ===========================================
 def login_view(request):
     if request.user.is_authenticated:
-        # Evita redirigir si el usuario no tiene rol definido o sesión dañada
         if not hasattr(request.user, "nombre_rol") or not request.user.nombre_rol:
             logout(request)
             return redirect("login")
 
-        # Redirección automática según rol
         if request.user.nombre_rol == "administracion":
             return redirect("admin")
         elif request.user.nombre_rol == "mantenimiento":
@@ -85,13 +187,11 @@ def login_view(request):
         else:
             return redirect("usuario_principal")
 
-
     if request.method == "POST":
         identificador = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
         user = None
 
-        # Buscar usuario por email
         u = Usuario.objects.filter(email__iexact=identificador).first()
         if u:
             user = authenticate(request, username=u.username, password=password)
@@ -100,7 +200,6 @@ def login_view(request):
             login(request, user)
             messages.success(request, f"Bienvenido {user.first_name or user.username} 👋")
 
-            # Redirección por rol
             if user.nombre_rol == "administracion":
                 return redirect("admin")
             elif user.nombre_rol == "mantenimiento":
@@ -128,62 +227,6 @@ def usuario_principal(request):
     })
 
 
-# 👇 VISTA CORREGIDA: Dashboard de Mantenimiento
-@rol_requerido(["mantenimiento"])
-@login_required
-def mantenimiento(request):
-    # Verifica que el usuario sea de mantenimiento
-    if request.user.nombre_rol != "mantenimiento":
-        messages.error(request, "Acceso denegado. Solo para personal de mantenimiento.")
-        return redirect("usuario_principal")
-
-    # Filtra reportes asignados a este usuario
-    reportes = Reporte.objects.filter(asignado_a=request.user).order_by('-created')
-
-    # Búsqueda y filtros
-    busqueda = request.GET.get('busqueda', '').strip()
-    estado_filtro = request.GET.get('estado', 'todos')
-    prioridad_filtro = request.GET.get('prioridad', 'todas')
-
-    if busqueda:
-        reportes = reportes.filter(
-            Q(titulo__icontains=busqueda) |
-            Q(descripcion__icontains=busqueda) |
-            Q(ubicacion__icontains=busqueda)
-        )
-    if estado_filtro != 'todos':
-        reportes = reportes.filter(estado=estado_filtro)
-    if prioridad_filtro != 'todas':
-        reportes = reportes.filter(prioridad=prioridad_filtro)
-
-    # Contadores
-    total = reportes.count()
-    pendientes = reportes.filter(estado='pendiente').count()
-    en_proceso = reportes.filter(estado='en_proceso').count()
-    pausados = reportes.filter(estado='pausado').count()
-    completados = reportes.filter(estado='completado').count()
-
-    # Paginación
-    paginator = Paginator(reportes, 10)
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
-
-    context = {
-        "reportes": page_obj,
-        "page_obj": page_obj,
-        "total": total,
-        "pendientes": pendientes,
-        "en_proceso": en_proceso,
-        "pausados": pausados,
-        "completados": completados,
-        "busqueda": busqueda,
-        "estado_filtro": estado_filtro,
-        "prioridad_filtro": prioridad_filtro,
-    }
-
-    return render(request, "app/mantenimiento_dashboard.html", context)
-
-
 # 4 CERRAR SESIÓN
 def logout_view(request):
     logout(request)
@@ -209,23 +252,21 @@ def formulario_reporte(request):
     return render(request, "app/form_reporte.html", {"form": form})
 
 
-
 # ===========================================
 # Vistas de administración protegidas
 # ===========================================
-
 from django.utils.decorators import method_decorator
+
+def _qs_mantenedores():
+    return User.objects.filter(nombre_rol__iexact='mantenimiento', is_active=True).order_by('first_name', 'last_name')
 
 @rol_requerido(["administracion"])
 @login_required
 def admin(request): 
     reportes = Reporte.objects.all().order_by('-created')
-
-    # Búsqueda y filtros
     busqueda = request.GET.get('busqueda', '').strip()
     estado_filtro = request.GET.get('estado', 'todos')
     prioridad_filtro = request.GET.get('prioridad', 'todas')
-    
     mantenedores = _qs_mantenedores()
 
     if busqueda:
@@ -239,14 +280,12 @@ def admin(request):
     if prioridad_filtro != 'todas':
         reportes = reportes.filter(prioridad=prioridad_filtro)
 
-    # Contadores
     total = reportes.count()
     pendientes = reportes.filter(estado='pendiente').count()
     en_proceso = reportes.filter(estado='en_proceso').count()
     pausados = reportes.filter(estado='pausado').count()
     completados = reportes.filter(estado='completado').count()
 
-    # Paginación
     paginator = Paginator(reportes, 10)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
@@ -266,22 +305,16 @@ def admin(request):
     }
     return render(request, "app/admin.html", context)
 
-def _qs_mantenedores():
-    return User.objects.filter(nombre_rol__iexact='mantenimiento', is_active=True).order_by('first_name', 'last_name')
-
-User = get_user_model()
 
 @rol_requerido(["administracion"])
 @login_required
 def asignar_mantenedor(request, pk):
-    # Solo deja asignar a staff/superuser (ajusta si tienes decoradores de rol)
     if not (request.user.is_staff or request.user.is_superuser or request.user.nombre_rol == "administracion"):
         return HttpResponseForbidden("No autorizado")
 
     reporte = get_object_or_404(Reporte, pk=pk)
-    asignado_id = request.POST.get('asignado_a')  # puede venir vacío
+    asignado_id = request.POST.get('asignado_a')
 
-    # Validar que el usuario seleccionado efectivamente es 'mantenedor'
     mantenedores = _qs_mantenedores()
 
     if asignado_id in [None, "", "null"]:
@@ -295,14 +328,13 @@ def asignar_mantenedor(request, pk):
             return JsonResponse({"ok": False, "error": "Mantenedor inválido."}, status=400)
 
         reporte.asignado_a = mantenedor
-        # (Opcional) mover a "en_proceso" al asignar
         if reporte.estado == 'pendiente':
             reporte.estado = 'en_proceso'
             reporte.save(update_fields=['asignado_a', 'estado'])
         else:
             reporte.save(update_fields=['asignado_a'])
 
-        asignado_nombre = f"{getattr(mantenedor, 'first_name', '')} {getattr(mantenedor, 'last_name', '')}".strip() or mantenedor.get_username()
+        asignado_nombre = f"{mantenedor.first_name} {mantenedor.last_name}".strip() or mantenedor.username
 
     return JsonResponse({
         "ok": True,
@@ -310,6 +342,7 @@ def asignar_mantenedor(request, pk):
         "asignado_nombre": asignado_nombre,
         "estado": reporte.get_estado_display(),
     })
+
 
 @rol_requerido(["administracion"])
 @login_required
@@ -322,7 +355,7 @@ def panel_admin_ubicacion(request):
     return render(request, "app/panel_admin_ubicacion.html")
 
 
-# === Vistas de Listado protegidas por rol Administracion ===
+# === Vistas CBV protegidas por rol Administracion ===
 
 @method_decorator(rol_requerido(["administracion"]), name="dispatch")
 @method_decorator(login_required, name="dispatch")
