@@ -1,14 +1,16 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
-from .models import Usuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala, Reporte
+from app.models import Usuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala, Reporte
 from django.core.paginator import Paginator
 from django.contrib import messages
 from django.db.models import Q
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-from .forms import PisoForm, ReporteForm, RegistroUsuarioForm, CategoriaForm, PrioridadForm, RolForm, GeneroForm, EdificioForm, SalaForm
-from django.contrib.auth import authenticate, login, logout
+from app.forms import PisoForm, ReporteForm, RegistroUsuarioForm, CategoriaForm, PrioridadForm, RolForm, GeneroForm, EdificioForm, SalaForm
+from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib.auth.decorators import login_required
 from functools import wraps
+from django.http import JsonResponse, HttpResponseForbidden
+from django.utils.decorators import method_decorator
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST
@@ -332,7 +334,7 @@ def asignar_mantenedor(request, pk):
             reporte.estado = 'en_proceso'
             reporte.save(update_fields=['asignado_a', 'estado'])
         else:
-            reporte.save(update_fields=['asignado_a'])
+            reporte.save(update_fields=['asignado_a', 'estado'])
 
         asignado_nombre = f"{mantenedor.first_name} {mantenedor.last_name}".strip() or mantenedor.username
 
@@ -354,6 +356,49 @@ def panel_admin(request):
 def panel_admin_ubicacion(request):
     return render(request, "app/panel_admin_ubicacion.html")
 
+class ReporteListView(ListView):
+    model = Reporte
+    paginate_by = 10
+    template_name = "app/list_reporte.html"
+
+class ReporteCreateView(CreateView):
+    model = Reporte
+    form_class = ReporteForm
+    template_name = "app/form_reporte.html"
+    success_url = reverse_lazy("reporte-list")
+
+class ReporteUpdateView(UpdateView):
+    model = Reporte
+    form_class = ReporteForm
+    template_name = "app/form_reporte.html"
+    success_url = reverse_lazy("reporte-list")
+
+class ReporteDeleteView(DeleteView):
+    model = Reporte
+    template_name = "app/confirm_delete.html"
+    success_url = reverse_lazy("reporte-list")
+
+class UsuarioListView(ListView):
+    model = Usuario
+    paginate_by = 10
+    template_name = "app/list_usuario.html"
+
+class UsuarioCreateView(CreateView):
+    model = Usuario
+    form_class = RegistroUsuarioForm
+    template_name = "app/form_usuario.html"
+    success_url = reverse_lazy("usuario-list")
+
+class UsuarioUpdateView(UpdateView):
+    model = Usuario
+    form_class = RegistroUsuarioForm
+    template_name = "app/form_usuario.html"
+    success_url = reverse_lazy("usuario-list")
+
+class UsuarioDeleteView(DeleteView):
+    model = Usuario
+    template_name = "app/confirm_delete.html"
+    success_url = reverse_lazy("usuario-list")
 
 # === Vistas CBV protegidas por rol Administracion ===
 

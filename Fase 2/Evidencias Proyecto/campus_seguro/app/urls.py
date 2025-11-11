@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import home, usuario_principal, formulario_reporte, admin, asignar_mantenedor, panel_admin, panel_admin_ubicacion, CategoriaListView, CategoriaCreateView, CategoriaUpdateView, CategoriaDeleteView, PrioridadListView, PrioridadCreateView, PrioridadUpdateView, PrioridadDeleteView, RolListView, RolCreateView, RolUpdateView, RolDeleteView, GeneroListView, GeneroCreateView, GeneroUpdateView, GeneroDeleteView, EdificioListView, EdificioCreateView, EdificioUpdateView, EdificioDeleteView, PisoListView, PisoCreateView, PisoUpdateView, PisoDeleteView, SalaListView, SalaCreateView, SalaUpdateView, SalaDeleteView
+from app.views import home, usuario_principal, formulario_reporte, admin, asignar_mantenedor, panel_admin, panel_admin_ubicacion, ReporteListView, ReporteCreateView, ReporteUpdateView, ReporteDeleteView, UsuarioListView, UsuarioCreateView, UsuarioUpdateView, UsuarioDeleteView, CategoriaListView, CategoriaCreateView, CategoriaUpdateView, CategoriaDeleteView, PrioridadListView, PrioridadCreateView, PrioridadUpdateView, PrioridadDeleteView, RolListView, RolCreateView, RolUpdateView, RolDeleteView, GeneroListView, GeneroCreateView, GeneroUpdateView, GeneroDeleteView, EdificioListView, EdificioCreateView, EdificioUpdateView, EdificioDeleteView, PisoListView, PisoCreateView, PisoUpdateView, PisoDeleteView, SalaListView, SalaCreateView, SalaUpdateView, SalaDeleteView
 
 urlpatterns = [
     # 1. Página inicial → LOGIN
@@ -23,16 +23,13 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
 
     # 5. Formulario de reportes
-    path('formulario-reporte/', views.formulario_reporte, name="formulario-reporte"),
-    
-    # Rutas duplicadas (puedes eliminar una si lo deseas, pero no causan error)
-    path('usuario_principal/', usuario_principal, name="usuario_principal"),
+    path('formulario-reporte/', formulario_reporte, name="formulario-reporte"),
     
     path('administrador/', admin, name="admin"),
     
     path('administrador/reportes/<int:pk>/asignar/', asignar_mantenedor, name="asignar-mantenedor"),
     
-    path('administrador/panel', panel_admin, name="panel-admin"),
+    path('administrador/panel/', panel_admin, name="panel-admin"),
     
     path('administrador/panel/ubicacion', panel_admin_ubicacion, name="panel-admin-ubicacion"),
 
@@ -77,4 +74,16 @@ urlpatterns = [
     path("administrador/panel/ubicacion/salas/nuevo/", SalaCreateView.as_view(), name="sala-create"),
     path("administrador/panel/ubicacion/salas/<int:pk>/editar/", SalaUpdateView.as_view(), name="sala-update"),
     path("administrador/panel/ubicacion/salas/<int:pk>/eliminar/", SalaDeleteView.as_view(), name="sala-delete"),
+    
+    # Reportes
+    path("administrador/panel/reportes/", ReporteListView.as_view(), name="reporte-list"),
+    path("administrador/panel/reportes/nuevo/", ReporteCreateView.as_view(), name="reporte-create"),
+    path("administrador/panel/reportes/<int:pk>/editar/", ReporteUpdateView.as_view(), name="reporte-update"),
+    path("administrador/panel/reportes/<int:pk>/eliminar/", ReporteDeleteView.as_view(), name="reporte-delete"),
+    
+    # Usuarios
+    path("administrador/panel/usuarios/", UsuarioListView.as_view(), name="usuario-list"),
+    path("administrador/panel/usuarios/nuevo/", UsuarioCreateView.as_view(), name="usuario-create"),
+    path("administrador/panel/usuarios/<int:pk>/editar/", UsuarioUpdateView.as_view(), name="usuario-update"),
+    path("administrador/panel/usuarios/<int:pk>/eliminar/", UsuarioDeleteView.as_view(), name="usuario-delete"),
 ]

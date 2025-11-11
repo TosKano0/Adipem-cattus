@@ -1,6 +1,5 @@
-# app/forms.py
 from django import forms
-from .models import Reporte, Categoria, Prioridad, Rol, Genero, Edificio, Piso, Sala
+from app.models import Reporte, Categoria, Prioridad, Rol, Genero, Edificio, Piso, Sala
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 
@@ -58,13 +57,10 @@ class ReporteForm(forms.ModelForm):
         if hasattr(img, "content_type") and not img.content_type.startswith("image/"):
             raise forms.ValidationError("El archivo debe ser una imagen válida.")
         return img
-from django import forms
-from .models import Usuario
 
 User = get_user_model()
 
 class RegistroUsuarioForm(UserCreationForm):
-    # Campos que tú sobrescribiste ⇒ define su widget aquí
     first_name = forms.CharField(
         label="Nombre", max_length=150,
         widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Tu nombre"})
@@ -78,7 +74,6 @@ class RegistroUsuarioForm(UserCreationForm):
         widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "tucorreo@duocuc.cl"})
     )
 
-    # Estos vienen del padre ⇒ también los sobrescribimos para agregar la clase
     password1 = forms.CharField(
         label="Contraseña",
         widget=forms.PasswordInput(attrs={"class": "form-control"})
