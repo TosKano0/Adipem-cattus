@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Dashboard Mantenimiento - CampusSeguro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             background: #f8f9fa;
@@ -315,44 +316,43 @@
                     <p>Gestión de Reportes</p>
                 {% endif %}
             </div>
-            <a href="{% url 'usuario_principal' %}" class="btn" style="background: #198754;">Panel Principal</a>
             <a href="{% url 'logout' %}" class="logout-btn">Cerrar Sesión</a>
         </div>
 
         <!-- Tarjetas resumen -->
         <div class="stats-cards">
-            <div class="stat-card">
+            <div class="stat-card" id="card-total">
                 <div>
                     <div>Total</div>
-                    <div class="value">{{ total }}</div>
+                    <div class="value" id="contador-total">{{ total }}</div>
                 </div>
                 <div class="icon">📄</div>
             </div>
-            <div class="stat-card pendiente">
+            <div class="stat-card pendiente" id="card-pendiente">
                 <div>
                     <div>Pendientes</div>
-                    <div class="value">{{ pendientes }}</div>
+                    <div class="value" id="contador-pendientes">{{ pendientes }}</div>
                 </div>
                 <div class="icon">⏳</div>
             </div>
-            <div class="stat-card en-proceso">
+            <div class="stat-card en-proceso" id="card-en-proceso">
                 <div>
                     <div>En Proceso</div>
-                    <div class="value">{{ en_proceso }}</div>
+                    <div class="value" id="contador-en-proceso">{{ en_proceso }}</div>
                 </div>
                 <div class="icon">❗</div>
             </div>
-            <div class="stat-card pausado">
+            <div class="stat-card pausado" id="card-pausado">
                 <div>
                     <div>Pausados</div>
-                    <div class="value">{{ pausados }}</div>
+                    <div class="value" id="contador-pausados">{{ pausados }}</div>
                 </div>
                 <div class="icon">⏸️</div>
             </div>
-            <div class="stat-card completado">
+            <div class="stat-card completado" id="card-completado">
                 <div>
                     <div>Completados</div>
-                    <div class="value">{{ completados }}</div>
+                    <div class="value" id="contador-completados">{{ completados }}</div>
                 </div>
                 <div class="icon">✅</div>
             </div>
@@ -409,7 +409,7 @@
                 </thead>
                 <tbody>
                     {% for r in reportes %}
-                    <tr>
+                    <tr data-reporte-id="{{ r.id }}" data-current-status="{{ r.estado }}">
                         <td>
                             <strong>{{ r.titulo }}</strong><br>
                             <small>{{ r.descripcion|truncatechars:50 }}</small>
@@ -418,14 +418,14 @@
                         <td>{{ r.ubicacion }}</td>
                         <td>
                             {% if r.prioridad == 'Alta' %}
-                                <span class="priority-high">{{ r.prioridad }}</span>
+                                <span class="priority-high">Alta</span>
                             {% elif r.prioridad == 'Media' %}
-                                <span class="priority-medium">{{ r.prioridad }}</span>
+                                <span class="priority-medium">Media</span>
                             {% else %}
-                                <span class="priority-low">{{ r.prioridad }}</span>
+                                <span class="priority-low">Baja</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="estado-cell">
                             {% if r.estado == 'pendiente' %}
                                 <span class="status-pendiente">Pendiente</span>
                             {% elif r.estado == 'en_proceso' %}
@@ -445,7 +445,9 @@
                         </td>
                         <td>{{ r.created|date:"d M Y, H:i" }}</td>
                         <td class="actions">
-                            <button onclick="gestionarReporte({{ r.id }})">Gestionar</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary gestionar-btn" data-bs-toggle="modal" data-bs-target="#gestionarEstadoModal">
+                                Gestionar
+                            </button>
                         </td>
                     </tr>
                     {% empty %}
@@ -475,10 +477,130 @@
         </div>
     </div>
 
-    <!-- Script para mensajes auto-ocultables -->
+    <!-- Modal de Gestión de Estado -->
+    <div class="modal fade" id="gestionarEstadoModal" tabindex="-1" aria-labelledby="gestionarEstadoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="gestionarEstadoModalLabel">Gestionar Estado del Reporte</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="gestionarEstadoForm">
+                        <input type="hidden" id="reportIdInput" name="reporte_id">
+                        <div class="mb-3">
+                            <label for="estadoSelect" class="form-label">Selecciona el nuevo estado:</label>
+                            <select class="form-select" id="estadoSelect" name="nuevo_estado" required>
+                                <option value="" disabled selected>--- Selecciona un estado ---</option>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="en_proceso">En Proceso</option>
+                                <option value="pausado">Pausado</option>
+                                <option value="completado">Completado</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="guardarCambiosBtn">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Auto-ocultar mensajes después de 5 segundos
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
+            // Variables globales
+            let reporteSeleccionado = null;
+
+            // Escuchar el evento de mostrar el modal
+            const gestionarEstadoModal = document.getElementById('gestionarEstadoModal');
+            gestionarEstadoModal.addEventListener('show.bs.modal', function (event) {
+                // Botón que disparó el modal
+                const button = event.relatedTarget;
+                const row = button.closest('tr');
+                reporteSeleccionado = {
+                    id: row.getAttribute('data-reporte-id'),
+                    estadoActual: row.getAttribute('data-current-status')
+                };
+
+                // Rellenar el input oculto con el ID del reporte
+                document.getElementById('reportIdInput').value = reporteSeleccionado.id;
+
+                // Seleccionar el estado actual en el select
+                const estadoSelect = document.getElementById('estadoSelect');
+                estadoSelect.value = reporteSeleccionado.estadoActual;
+            });
+
+            // Manejar el clic en "Guardar Cambios"
+            document.getElementById('guardarCambiosBtn').addEventListener('click', function () {
+                const formData = new FormData(document.getElementById('gestionarEstadoForm'));
+                const nuevoEstado = document.getElementById('estadoSelect').value;
+
+                if (!nuevoEstado) {
+                    alert('Por favor, selecciona un estado.');
+                    return;
+                }
+
+                // Hacer la petición AJAX
+                fetch('{% url "actualizar_estado_reporte" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const modalBootstrap = bootstrap.Modal.getInstance(gestionarEstadoModal);
+                        modalBootstrap.hide();
+
+                        // Actualizar la fila de la tabla
+                        const fila = document.querySelector(`tr[data-reporte-id="${data.reporte_id}"]`);
+                        const celdaEstado = fila.querySelector('.estado-cell');
+                        celdaEstado.innerHTML = '';
+                        let clase = '';
+                        if (data.nuevo_estado === 'Pendiente') clase = 'status-pendiente';
+                        else if (data.nuevo_estado === 'En Proceso') clase = 'status-en-proceso';
+                        else if (data.nuevo_estado === 'Pausado') clase = 'status-pausado';
+                        else if (data.nuevo_estado === 'Completado') clase = 'status-completado';
+                        celdaEstado.innerHTML = `<span class="${clase}">${data.nuevo_estado}</span>`;
+                        fila.setAttribute('data-current-status', data.nuevo_estado.toLowerCase());
+
+                        // Actualizar los contadores
+                        document.getElementById('contador-total').textContent = data.contadores.total;
+                        document.getElementById('contador-pendientes').textContent = data.contadores.pendientes;
+                        document.getElementById('contador-en-proceso').textContent = data.contadores.en_proceso;
+                        document.getElementById('contador-pausados').textContent = data.contadores.pausados;
+                        document.getElementById('contador-completados').textContent = data.contadores.completados;
+
+                        // Mostrar mensaje de éxito
+                        const contenedor = document.querySelector('.container');
+                        const mensaje = `
+                            <div class="message success" style="max-width: 800px; margin: 0 auto 20px;">
+                                Estado actualizado a "${data.nuevo_estado}".
+                                <span class="close-btn" onclick="this.parentElement.remove()">×</span>
+                            </div>`;
+                        contenedor.insertAdjacentHTML('afterbegin', mensaje);
+                        
+                        setTimeout(() => {
+                            const msg = contenedor.querySelector('.message');
+                            if (msg) msg.remove();
+                        }, 5000);
+                    } else {
+                        alert('Error al actualizar el estado: ' + (data.error || 'Error desconocido.'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Ocurrió un error inesperado.');
+                });
+            });
+
+            // Auto-ocultar mensajes de Django
             const messages = document.querySelectorAll('.message');
             messages.forEach(msg => {
                 setTimeout(() => {
@@ -487,16 +609,12 @@
                     setTimeout(() => msg.remove(), 500);
                 }, 5000);
             });
-        });
 
-        // Script para filtros y acciones
-        document.getElementById('filtroForm').addEventListener('change', function() {
-            this.submit();
+            // Filtros
+            document.getElementById('filtroForm').addEventListener('change', function() {
+                this.submit();
+            });
         });
-
-        function gestionarReporte(id) {
-            alert("Funcionalidad de gestión no implementada aún. ID del reporte: " + id);
-        }
     </script>
 </body>
 </html>

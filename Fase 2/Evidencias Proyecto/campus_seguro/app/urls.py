@@ -13,8 +13,11 @@ urlpatterns = [
     # 3. Panel principal tras iniciar sesión
     path("usuario_principal/", views.usuario_principal, name="usuario_principal"),
 
-    # Dashboard de mantenimiento
+    # 4. Dashboard de mantenimiento
     path("mantenimiento_dashboard/", views.mantenimiento, name="mantenimiento"),
+
+    # 5. NUEVO: Actualizar estado de reporte (para el formulario en el template)
+    path("mantenimiento/actualizar-estado/", views.actualizar_estado_reporte, name="actualizar_estado_reporte"),
 
     # 4. Cierre de sesión
     path("logout/", views.logout_view, name="logout"),
@@ -30,7 +33,7 @@ urlpatterns = [
     
     path('administrador/panel/ubicacion', panel_admin_ubicacion, name="panel-admin-ubicacion"),
 
-    # Configuración de generos
+    # Configuración de géneros
     path("administrador/panel/generos/", GeneroListView.as_view(), name="genero-list"),
     path("administrador/panel/generos/nuevo/", GeneroCreateView.as_view(), name="genero-create"),
     path("administrador/panel/generos/<int:pk>/editar/", GeneroUpdateView.as_view(), name="genero-update"),
