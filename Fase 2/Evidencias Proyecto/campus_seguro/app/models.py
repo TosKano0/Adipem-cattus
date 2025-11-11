@@ -1,9 +1,7 @@
-# app/models.py
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
-
 
 class Reporte(models.Model):
     titulo = models.CharField(max_length=100)
@@ -59,12 +57,10 @@ class Usuario(AbstractUser):
         ("mantenimiento", "Mantenimiento"),
     ]
 
-    # Campos adicionales
     edad = models.PositiveSmallIntegerField(null=True, blank=True)
     genero = models.CharField(max_length=12, choices=GENERO_CHOICES, blank=True)
     nombre_rol = models.CharField(max_length=20, choices=ROL_CHOICES, default="usuario")
 
-    # 👇 Asegurar que el email sea único y obligatorio
     email = models.EmailField(unique=True)
 
     class Meta:
@@ -74,14 +70,11 @@ class Usuario(AbstractUser):
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.email})"
 
-
-# Modelos auxiliares (sin cambios)
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100)
 
     def __str__(self):
         return self.nombre
-
 
 class Prioridad(models.Model):
     nivel = models.CharField(max_length=100)
@@ -89,20 +82,17 @@ class Prioridad(models.Model):
     def __str__(self):
         return self.nivel
 
-
 class Rol(models.Model):
     nombre_rol = models.CharField(max_length=100)
 
     def __str__(self):
         return self.nombre_rol
 
-
 class Genero(models.Model):
     genero = models.CharField(max_length=100)
 
     def __str__(self):
         return self.genero
-
 
 class Edificio(models.Model):
     nombre = models.CharField(max_length=120, unique=True)
@@ -113,7 +103,6 @@ class Edificio(models.Model):
 
     def __str__(self):
         return f"{self.nombre} ({self.codigo})"
-
 
 class Piso(models.Model):
     edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name="pisos")
@@ -130,29 +119,6 @@ class Piso(models.Model):
 
     def __str__(self):
         return f"Piso {self.numero} — {self.edificio.codigo.upper()}"
-
-
-class Sala(models.Model):
-    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name="salas")
-    piso = models.ForeignKey(Piso, on_delete=models.CASCADE, related_name="salas")
-    codigo = models.CharField(max_length=50)
-    nombre = models.CharField(max_length=120, blank=True)
-
-    class Meta:
-        ordering = ["edificio", "piso__numero", "codigo"]
-        constraints = [
-            models.UniqueConstraint(fields=["edificio", "codigo"], name="codigo_sala_unico_por_edificio"),
-        ]
-
-    def save(self, *args, **kwargs):
-        if self.piso_id:
-            self.edificio = self.piso.edificio
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.codigo} — {self.edificio.codigo.upper()} (Piso {self.piso.numero})"
-    
-
 
 class Sala(models.Model):
     edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name="salas")
