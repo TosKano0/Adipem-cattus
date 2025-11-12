@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+{% load static %}
 
 <head>
     <meta charset="UTF-8">
@@ -63,23 +64,27 @@
             border-radius: 6px;
             position: relative;
             font-size: 0.95em;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
         }
+
         .message.success {
             background: #d1e7dd;
             color: #0f5132;
             border: 1px solid #a3cfbb;
         }
+
         .message.error {
             background: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+
         .message.info {
             background: #d1ecf1;
             color: #0c5460;
             border: 1px solid #bee5eb;
         }
+
         .message .close-btn {
             position: absolute;
             top: 8px;
@@ -392,7 +397,8 @@
             <div>
                 <h1>Dashboard Administración</h1>
                 {% if request.user %}
-                <p>Bienvenido, <strong>{{ request.user.first_name }} {{ request.user.last_name }}</strong> - Gestión de Reportes</p>
+                <p>Bienvenido, <strong>{{ request.user.first_name }} {{ request.user.last_name }}</strong> - Gestión de
+                    Reportes</p>
                 {% else %}
                 <p>Gestión de Reportes</p>
                 {% endif %}
@@ -491,6 +497,7 @@
                         <th>Estado</th>
                         <th>Asignado</th>
                         <th>Fecha</th>
+                        <th>Fecha asignación</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -531,6 +538,7 @@
                             {% endif %}
                         </td>
                         <td>{{ r.created|date:"d M Y, H:i" }}</td>
+                        <td>{{ r.fecha_asignacion|date:"d M Y, H:i" }}</td>
                         <td class="actions">
                             <button type="button"
                                 onclick="abrirModalGestion({{ r.id }}, {{ r.asignado_a.id|default:'null' }})">
@@ -564,8 +572,9 @@
             </div>
         </div>
     </div>
+</body>
 
-    <!-- Script para filtros y acciones -->
+<!-- Script para filtros y acciones -->
     <script>
         // Actualizar filtros automáticamente
         document.getElementById('filtroForm').addEventListener('change', function () {
