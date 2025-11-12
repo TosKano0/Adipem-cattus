@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
-from app.models import Usuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala, Reporte
+from app.models import Usuario, Genero, Prioridad, Rol, Categoria, Edificio, Piso, Sala, Reporte, HistorialAsignacion
 from django.core.paginator import Paginator
 from django.contrib import messages
 from django.db.models import Q
@@ -11,10 +11,9 @@ from django.contrib.auth.decorators import login_required
 from functools import wraps
 from django.http import JsonResponse, HttpResponseForbidden
 from django.utils.decorators import method_decorator
-from django.contrib.auth import get_user_model
-from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -237,6 +236,7 @@ def logout_view(request):
 
 
 # 5 FORMULARIO DE REPORTE
+@rol_requerido(["usuario"])
 @login_required
 def formulario_reporte(request):
     if request.method == "POST":
@@ -257,8 +257,6 @@ def formulario_reporte(request):
 # ===========================================
 # Vistas de administración protegidas
 # ===========================================
-from django.utils.decorators import method_decorator
-
 def _qs_mantenedores():
     return User.objects.filter(nombre_rol__iexact='mantenimiento', is_active=True).order_by('first_name', 'last_name')
 
@@ -307,7 +305,6 @@ def admin(request):
     }
     return render(request, "app/admin.html", context)
 
-
 @rol_requerido(["administracion"])
 @login_required
 def asignar_mantenedor(request, pk):
@@ -315,36 +312,117 @@ def asignar_mantenedor(request, pk):
         return HttpResponseForbidden("No autorizado")
 
     reporte = get_object_or_404(Reporte, pk=pk)
-    asignado_id = request.POST.get('asignado_a')
 
+    # 🚫 No permitir gestionar un reporte completado
+    if reporte.estado == 'completado':
+        return JsonResponse(
+            {"ok": False, "error": "Este reporte está completado y no admite cambios."},
+            status=409
+        )
+
+    asignado_id = request.POST.get('asignado_a')
     mantenedores = _qs_mantenedores()
 
-    if asignado_id in [None, "", "null"]:
+    # Valores previos para historial
+    asignado_de = reporte.asignado_a
+    estado_de = reporte.estado
+    prev_id = reporte.asignado_a_id
+
+    # ---- DESASIGNAR ----
+    if asignado_id in (None, "", "null"):
+        # Si ya está sin asignación y en pendiente, no hay cambios
+        if prev_id is None and reporte.estado == 'pendiente' and reporte.fecha_asignacion is None:
+            return JsonResponse({
+                "ok": True,
+                "reporte_id": reporte.pk,
+                "asignado_nombre": "Sin asignar",
+                "estado": reporte.get_estado_display(),
+                "estado_slug": reporte.estado,
+                "fecha_asignacion": None,
+                "sin_cambios": True,
+            })
+
+        # Desasignar y regresar a 'pendiente'
         reporte.asignado_a = None
-        reporte.save(update_fields=['asignado_a'])
+        reporte.fecha_asignacion = None
+        if reporte.estado != 'pendiente':
+            reporte.estado = 'pendiente'
+
+        campos = ['asignado_a', 'fecha_asignacion', 'estado', 'updated']
+        reporte.save(update_fields=campos)
+
+        # Historial
+        HistorialAsignacion.objects.create(
+            reporte=reporte,
+            asignado_de=asignado_de,
+            asignado_a=None,
+            estado_de=estado_de,
+            estado_a=reporte.estado,
+            cambiado_por=request.user,
+            motivo="Desasignación",
+        )
+
         asignado_nombre = "Sin asignar"
+
+    # ---- ASIGNAR / REASIGNAR ----
     else:
         try:
             mantenedor = mantenedores.get(pk=asignado_id)
         except User.DoesNotExist:
             return JsonResponse({"ok": False, "error": "Mantenedor inválido."}, status=400)
 
+        # Si el mantenedor no cambia y el estado no cambiará, evita escritura
+        proximo_estado = 'en_proceso' if reporte.estado == 'pendiente' else reporte.estado
+        if prev_id == mantenedor.id and proximo_estado == reporte.estado:
+            asignado_nombre = (f"{mantenedor.first_name} {mantenedor.last_name}").strip() or mantenedor.username
+            return JsonResponse({
+                "ok": True,
+                "reporte_id": reporte.pk,
+                "asignado_nombre": asignado_nombre,
+                "estado": reporte.get_estado_display(),
+                "fecha_asignacion": reporte.fecha_asignacion.isoformat() if reporte.fecha_asignacion else None,
+                "sin_cambios": True,
+            })
+
         reporte.asignado_a = mantenedor
+        now = timezone.now()
+        campos = ['asignado_a', 'updated']
+
+        # Primera asignación → fecha_asignacion
+        if not reporte.fecha_asignacion or prev_id != mantenedor.id:
+            reporte.fecha_asignacion = now
+            campos.append('fecha_asignacion')
+            # Si quieres registrar la última reasignación, descomenta:
+            # reporte.fecha_ultima_reasignacion = now
+            # campos.append('fecha_ultima_reasignacion')
+
+        # Si estaba pendiente, pasa a en_proceso
         if reporte.estado == 'pendiente':
             reporte.estado = 'en_proceso'
-            reporte.save(update_fields=['asignado_a', 'estado'])
-        else:
-            reporte.save(update_fields=['asignado_a', 'estado'])
+            campos.append('estado')
 
-        asignado_nombre = f"{mantenedor.first_name} {mantenedor.last_name}".strip() or mantenedor.username
+        reporte.save(update_fields=campos)
+
+        # Historial
+        HistorialAsignacion.objects.create(
+            reporte=reporte,
+            asignado_de=asignado_de,
+            asignado_a=mantenedor,
+            estado_de=estado_de,
+            estado_a=reporte.estado,
+            cambiado_por=request.user,
+            motivo=("Asignación" if prev_id is None else "Reasignación"),
+        )
+
+        asignado_nombre = (f"{mantenedor.first_name} {mantenedor.last_name}").strip() or mantenedor.username
 
     return JsonResponse({
         "ok": True,
         "reporte_id": reporte.pk,
         "asignado_nombre": asignado_nombre,
         "estado": reporte.get_estado_display(),
+        "fecha_asignacion": reporte.fecha_asignacion.isoformat() if reporte.fecha_asignacion else None,
     })
-
 
 @rol_requerido(["administracion"])
 @login_required
@@ -356,51 +434,19 @@ def panel_admin(request):
 def panel_admin_ubicacion(request):
     return render(request, "app/panel_admin_ubicacion.html")
 
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class ReporteListView(ListView):
     model = Reporte
     paginate_by = 10
     template_name = "app/list_reporte.html"
 
-class ReporteCreateView(CreateView):
-    model = Reporte
-    form_class = ReporteForm
-    template_name = "app/form_reporte.html"
-    success_url = reverse_lazy("reporte-list")
-
-class ReporteUpdateView(UpdateView):
-    model = Reporte
-    form_class = ReporteForm
-    template_name = "app/form_reporte.html"
-    success_url = reverse_lazy("reporte-list")
-
-class ReporteDeleteView(DeleteView):
-    model = Reporte
-    template_name = "app/confirm_delete.html"
-    success_url = reverse_lazy("reporte-list")
-
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class UsuarioListView(ListView):
     model = Usuario
     paginate_by = 10
     template_name = "app/list_usuario.html"
-
-class UsuarioCreateView(CreateView):
-    model = Usuario
-    form_class = RegistroUsuarioForm
-    template_name = "app/form_usuario.html"
-    success_url = reverse_lazy("usuario-list")
-
-class UsuarioUpdateView(UpdateView):
-    model = Usuario
-    form_class = RegistroUsuarioForm
-    template_name = "app/form_usuario.html"
-    success_url = reverse_lazy("usuario-list")
-
-class UsuarioDeleteView(DeleteView):
-    model = Usuario
-    template_name = "app/confirm_delete.html"
-    success_url = reverse_lazy("usuario-list")
-
-# === Vistas CBV protegidas por rol Administracion ===
 
 @method_decorator(rol_requerido(["administracion"]), name="dispatch")
 @method_decorator(login_required, name="dispatch")
@@ -470,8 +516,21 @@ class SalaListView(ListView):
             )
         return qs
 
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
+class ReporteCreateView(CreateView):
+    model = Reporte
+    form_class = ReporteForm
+    template_name = "app/form_reporte.html"
+    success_url = reverse_lazy("reporte-list")
 
-# === Create / Update / Delete protegidas también ===
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
+class UsuarioCreateView(CreateView):
+    model = Usuario
+    form_class = RegistroUsuarioForm
+    template_name = "app/form_usuario.html"
+    success_url = reverse_lazy("usuario-list")
 
 @method_decorator(rol_requerido(["administracion"]), name="dispatch")
 @method_decorator(login_required, name="dispatch")
@@ -531,6 +590,22 @@ class SalaCreateView(CreateView):
 
 @method_decorator(rol_requerido(["administracion"]), name="dispatch")
 @method_decorator(login_required, name="dispatch")
+class ReporteUpdateView(UpdateView):
+    model = Reporte
+    form_class = ReporteForm
+    template_name = "app/form_reporte.html"
+    success_url = reverse_lazy("reporte-list")
+
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
+class UsuarioUpdateView(UpdateView):
+    model = Usuario
+    form_class = RegistroUsuarioForm
+    template_name = "app/form_usuario.html"
+    success_url = reverse_lazy("usuario-list")
+
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class CategoriaUpdateView(UpdateView):
     model = Categoria
     form_class = CategoriaForm
@@ -584,6 +659,20 @@ class SalaUpdateView(UpdateView):
     form_class = SalaForm
     template_name = "app/form_sala.html"
     success_url = reverse_lazy("sala-list")
+
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
+class ReporteDeleteView(DeleteView):
+    model = Reporte
+    template_name = "app/confirm_delete.html"
+    success_url = reverse_lazy("reporte-list")
+
+@method_decorator(rol_requerido(["administracion"]), name="dispatch")
+@method_decorator(login_required, name="dispatch")
+class UsuarioDeleteView(DeleteView):
+    model = Usuario
+    template_name = "app/confirm_delete.html"
+    success_url = reverse_lazy("usuario-list")
 
 @method_decorator(rol_requerido(["administracion"]), name="dispatch")
 @method_decorator(login_required, name="dispatch")

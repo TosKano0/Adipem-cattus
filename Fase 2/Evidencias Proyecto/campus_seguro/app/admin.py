@@ -1,5 +1,5 @@
 from django.contrib import admin
-from app.models import Usuario, Reporte, Categoria, Prioridad, Rol, Genero, Edificio, Piso, Sala
+from app.models import Usuario, Reporte, HistorialAsignacion, Categoria, Prioridad, Rol, Genero, Edificio, Piso, Sala
 from django.contrib.auth.admin import UserAdmin
 
 @admin.register(Edificio)
@@ -31,7 +31,18 @@ class UsuarioAdmin(UserAdmin):
     )
     list_display = ("username", "email", "first_name", "last_name", "nombre_rol", "is_staff")
 
-admin.site.register(Reporte)
+@admin.register(Reporte)
+class ReporteAdmin(admin.ModelAdmin):
+    search_fields = ['titulo', 'descripcion', 'ubicacion', 'categoria', 'prioridad']
+    list_display = ['titulo', 'estado', 'asignado_a', 'created']
+
+@admin.register(HistorialAsignacion)
+class HistorialAsignacionAdmin(admin.ModelAdmin):
+    list_display = ('reporte', 'asignado_de', 'asignado_a', 'estado_de', 'estado_a', 'cambiado_por', 'creado_en')
+    list_filter = ('estado_a', 'estado_de', 'creado_en')
+    search_fields = ('reporte__titulo', 'asignado_de__username', 'asignado_a__username', 'cambiado_por__username')
+    autocomplete_fields = ('reporte', 'asignado_de', 'asignado_a', 'cambiado_por')
+
 admin.site.register(Categoria)
 admin.site.register(Prioridad)
 admin.site.register(Rol)
