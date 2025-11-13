@@ -238,17 +238,33 @@
             font-size: 0.8em;
             font-weight: 600;
         }
-        .reports-table .actions button {
-            background: #6c757d;
-            color: white;
-            border: none;
+        .reports-table .actions .btn-action {
+            display: inline-block;
+            margin-right: 5px;
             padding: 5px 10px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.8em;
+            text-decoration: none;
+            color: white;
+            text-align: center;
+            min-width: 85px; /* 👈 Clave para igualar el ancho */
         }
-        .reports-table .actions button:hover {
-            background: #5a6268;
+        .btn-gestionar {
+            background: #0d6efd;
+            border: 1px solid #0d6efd;
+        }
+        .btn-gestionar:hover {
+            background: #0b5ed7;
+            border-color: #0b5ed7;
+        }
+        .btn-historia {
+            background: #198754;
+            border: 1px solid #198754;
+        }
+        .btn-historia:hover {
+            background: #157347;
+            border-color: #157347;
         }
 
         /* Paginación */
@@ -445,9 +461,14 @@
                         </td>
                         <td>{{ r.created|date:"d M Y, H:i" }}</td>
                         <td class="actions">
-                            <button type="button" class="btn btn-sm btn-outline-primary gestionar-btn" data-bs-toggle="modal" data-bs-target="#gestionarEstadoModal">
+                            <!-- Botón Gestionar (Existente) -->
+                            <button type="button" class="btn-action btn-gestionar gestionar-btn" data-bs-toggle="modal" data-bs-target="#gestionarEstadoModal">
                                 Gestionar
                             </button>
+                            <!-- Botón Historia (Nuevo) -->
+                            <a href="{% url 'ver_historial_reporte' r.id %}" class="btn-action btn-historia">
+                                Historia
+                            </a>
                         </td>
                     </tr>
                     {% empty %}

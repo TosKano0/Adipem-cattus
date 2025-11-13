@@ -249,6 +249,8 @@
                         <th>Estado</th>
                         <th>Fecha</th>
                         <th>Imagen</th>
+                        <!-- Nueva columna: Historial -->
+                        <th>Historial</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -284,11 +286,18 @@
                                     <img src="{{ r.imagen.url }}" alt="Miniatura" class="imagen-miniatura" onclick="mostrarModal('{{ r.imagen.url }}')">
                                 {% endif %}
                             </td>
+                            <!-- Nueva celda con el botón de historial -->
+                            <td>
+                                <a href="{% url 'ver_historial_reporte' r.id %}" class="btn btn-sm btn-outline-info">
+                                    Ver Historial
+                                </a>
+                            </td>
                         </tr>
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="7" style="text-align: center; padding: 20px;">
+                            <!-- Se ha cambiado el colspan a 8 para incluir la nueva columna -->
+                            <td colspan="8" style="text-align: center; padding: 20px;">
                                 No has creado ningún reporte aún.
                             </td>
                         </tr>
@@ -347,3 +356,4 @@
     </script>
 </body>
 </html>
+```

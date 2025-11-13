@@ -4,6 +4,35 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.conf import settings
 from django.core.exceptions import ValidationError
 
+
+# ===========================================
+# NUEVO MODELO: Historial de Estado
+# ===========================================
+class HistorialEstado(models.Model):
+    """
+    Modelo para registrar cada cambio de estado de un reporte.
+    """
+    reporte = models.ForeignKey('Reporte', on_delete=models.CASCADE, related_name='historial_estados')
+    estado_anterior = models.CharField(max_length=20, blank=True, null=True)
+    estado_nuevo = models.CharField(max_length=20)
+    fecha_cambio = models.DateTimeField(auto_now_add=True)
+    cambiado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='historial_estados_modificados'
+    )
+
+    class Meta:
+        ordering = ['-fecha_cambio']
+        verbose_name = "Historial de Estado"
+        verbose_name_plural = "Historiales de Estado"
+
+    def __str__(self):
+        return f"{self.reporte.titulo} - {self.estado_anterior} → {self.estado_nuevo}"
+
+
 class Reporte(models.Model):
     titulo = models.CharField(max_length=100)
     ubicacion = models.CharField(max_length=100)
@@ -46,15 +75,27 @@ class Reporte(models.Model):
     fecha_ultima_reasignacion = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
+        # Verificamos si es una actualización (no un objeto nuevo)
         if self.pk:
             original = type(self).objects.only('estado', 'asignado_a').get(pk=self.pk)
             if original.estado == 'completado':
                 if (self.estado != original.estado) or (self.asignado_a_id != original.asignado_a_id):
                     raise ValidationError("Reporte completado: no se pueden modificar estado ni mantenedor.")
+            
+            # 👇 NUEVO: Solo creamos un registro en el historial si el estado ha cambiado
+            if self.estado != original.estado:
+                HistorialEstado.objects.create(
+                    reporte=self,
+                    estado_anterior=original.estado,
+                    estado_nuevo=self.estado,
+                    cambiado_por=self.asignado_a  # O podrías usar el usuario que realiza la acción desde la vista
+                )
+        
         super().save(*args, **kwargs)
 
     def __str__(self):
         return self.titulo
+
 
 class HistorialAsignacion(models.Model):
     reporte = models.ForeignKey('Reporte', on_delete=models.CASCADE, related_name='historial_asignaciones')
@@ -100,6 +141,7 @@ class HistorialAsignacion(models.Model):
         a = self.asignado_a.username if self.asignado_a else "Sin asignación"
         return f"[{self.creado_en:%Y-%m-%d %H:%M}] {self.reporte_id}: {de} → {a}"
 
+
 class UsuarioManager(BaseUserManager):
     use_in_migrations = True
 
@@ -124,6 +166,7 @@ class UsuarioManager(BaseUserManager):
             raise ValueError("El superusuario debe tener is_superuser=True")
 
         return self.create_user(username, email, password, **extra_fields)
+
 
 class Usuario(AbstractUser):
     GENERO_CHOICES = [
@@ -152,11 +195,13 @@ class Usuario(AbstractUser):
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.email})"
 
+
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100)
 
     def __str__(self):
         return self.nombre
+
 
 class Prioridad(models.Model):
     nivel = models.CharField(max_length=100)
@@ -164,17 +209,20 @@ class Prioridad(models.Model):
     def __str__(self):
         return self.nivel
 
+
 class Rol(models.Model):
     nombre_rol = models.CharField(max_length=100)
 
     def __str__(self):
         return self.nombre_rol
 
+
 class Genero(models.Model):
     genero = models.CharField(max_length=100)
 
     def __str__(self):
         return self.genero
+
 
 class Edificio(models.Model):
     nombre = models.CharField(max_length=120, unique=True)
@@ -185,6 +233,7 @@ class Edificio(models.Model):
 
     def __str__(self):
         return f"{self.nombre} ({self.codigo})"
+
 
 class Piso(models.Model):
     edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name="pisos")
@@ -201,6 +250,7 @@ class Piso(models.Model):
 
     def __str__(self):
         return f"Piso {self.numero} — {self.edificio.codigo.upper()}"
+
 
 class Sala(models.Model):
     edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name="salas")

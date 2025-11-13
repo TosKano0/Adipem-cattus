@@ -24,6 +24,8 @@ urlpatterns = [
 
     # 5. Formulario de reportes
     path('formulario-reporte/', formulario_reporte, name="formulario-reporte"),
+
+    path('reporte/<int:reporte_id>/historial/', views.ver_historial_reporte, name='ver_historial_reporte'),
     
     path('administrador/', admin, name="admin"),
     

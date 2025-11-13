@@ -227,6 +227,26 @@ def usuario_principal(request):
         "page_obj": page_obj
     })
 
+# 👇 NUEVA VISTA: Ver el historial de estados de un reporte
+# ✅ CORREGIDO: Ahora permite el acceso a "usuario" y "mantenimiento"
+@rol_requerido(["usuario", "mantenimiento"])  # <-- Esta es la línea clave corregida
+@login_required
+def ver_historial_reporte(request, reporte_id):
+    """
+    Vista para mostrar el historial de cambios de estado de un reporte.
+    """
+    # El mantenedor ve el reporte si está asignado a él, el usuario si lo creó.
+    if request.user.nombre_rol == "mantenimiento":
+        reporte = get_object_or_404(Reporte, id=reporte_id, asignado_a=request.user)
+    else: # rol "usuario"
+        reporte = get_object_or_404(Reporte, id=reporte_id, usuario=request.user)
+    
+    historial = reporte.historial_estados.select_related('cambiado_por').order_by('-fecha_cambio')
+    
+    return render(request, 'app/ver_historial.html', {
+        'reporte': reporte,
+        'historial': historial,
+    })
 
 # 4 CERRAR SESIÓN
 def logout_view(request):
