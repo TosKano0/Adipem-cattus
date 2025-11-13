@@ -6,7 +6,6 @@ from django.core.exceptions import ValidationError
 
 class Reporte(models.Model):
     titulo = models.CharField(max_length=100)
-    ubicacion = models.CharField(max_length=100)
     categoria = models.CharField(max_length=100)
     prioridad = models.CharField(max_length=100)
     descripcion = models.TextField()
@@ -44,6 +43,14 @@ class Reporte(models.Model):
 
     fecha_asignacion = models.DateTimeField(null=True, blank=True)
     fecha_ultima_reasignacion = models.DateTimeField(null=True, blank=True)
+
+    sala = models.ForeignKey(
+        'Sala',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='reportes'
+    )
 
     def save(self, *args, **kwargs):
         if self.pk:

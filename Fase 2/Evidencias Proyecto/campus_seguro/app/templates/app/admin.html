@@ -509,7 +509,7 @@
                             <small>{{ r.descripcion|truncatechars:50 }}</small>
                         </td>
                         <td>{{ r.usuario.first_name }} {{ r.usuario.last_name }}</td>
-                        <td>{{ r.ubicacion }}</td>
+                        <td>{{ r.sala.nombre }}</td>
                         <td>
                             {% if r.prioridad == 'Alta' %}
                             <span class="priority-high">{{ r.prioridad }}</span>

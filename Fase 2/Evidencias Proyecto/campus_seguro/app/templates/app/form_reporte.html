@@ -16,20 +16,73 @@
         <form action="" method="post" novalidate class="form" id="reporteForm" enctype="multipart/form-data">
             {% csrf_token %}
 
-            {% for field in form %}
-            <div class="form__group {% if field.errors %}has-error{% endif %}">
-                <label class="form__label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-                {% if field.name == 'imagen' %}
-                    <!-- Contenedor para la previsualización -->
-                    <div id="preview-container" style="margin-top: 10px; text-align: center; display: none;">
-                        <img id="preview-image" src="" alt="Previsualización de la imagen" style="max-width: 150px; max-height: 150px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: zoom-in;">
-                    </div>
-                {% endif %}
-                {% if field.help_text %}<small class="form__help">{{ field.help_text }}</small>{% endif %}
-                {% for error in field.errors %}<small class="form__error">{{ error }}</small>{% endfor %}
+            {# ========== TÍTULO ========== #}
+            <div class="form__group {% if form.titulo.errors %}has-error{% endif %}">
+                <label class="form__label" for="{{ form.titulo.id_for_label }}">{{ form.titulo.label }}</label>
+                {{ form.titulo }}
+                {% if form.titulo.help_text %}<small class="form__help">{{ form.titulo.help_text }}</small>{% endif %}
+                {% for error in form.titulo.errors %}<small class="form__error">{{ error }}</small>{% endfor %}
             </div>
-            {% endfor %}
+
+            {# ========== CATEGORÍA ========== #}
+            <div class="form__group {% if form.categoria.errors %}has-error{% endif %}">
+                <label class="form__label" for="{{ form.categoria.id_for_label }}">{{ form.categoria.label }}</label>
+                {{ form.categoria }}
+                {% if form.categoria.help_text %}<small class="form__help">{{ form.categoria.help_text }}</small>{% endif %}
+                {% for error in form.categoria.errors %}<small class="form__error">{{ error }}</small>{% endfor %}
+            </div>
+
+            {# ========== PRIORIDAD ========== #}
+            <div class="form__group {% if form.prioridad.errors %}has-error{% endif %}">
+                <label class="form__label" for="{{ form.prioridad.id_for_label }}">{{ form.prioridad.label }}</label>
+                {{ form.prioridad }}
+                {% if form.prioridad.help_text %}<small class="form__help">{{ form.prioridad.help_text }}</small>{% endif %}
+                {% for error in form.prioridad.errors %}<small class="form__error">{{ error }}</small>{% endfor %}
+            </div>
+
+            {# ========== UBICACIÓN: EDIFICIO / PISO / SALA ========== #}
+            <div class="form__row-inline">
+                <div class="form__group {% if form.edificio.errors %}has-error{% endif %}">
+                    <label class="form__label" for="{{ form.edificio.id_for_label }}">{{ form.edificio.label }}</label>
+                    {{ form.edificio }}
+                    {% for error in form.edificio.errors %}<small class="form__error">{{ error }}</small>{% endfor %}
+                </div>
+
+                <div class="form__group {% if form.piso.errors %}has-error{% endif %}">
+                    <label class="form__label" for="{{ form.piso.id_for_label }}">{{ form.piso.label }}</label>
+                    {{ form.piso }}
+                    {% for error in form.piso.errors %}<small class="form__error">{{ error }}</small>{% endfor %}
+                </div>
+
+                <div class="form__group {% if form.sala.errors %}has-error{% endif %}">
+                    <label class="form__label" for="{{ form.sala.id_for_label }}">{{ form.sala.label }}</label>
+                    {{ form.sala }}
+                    {% if form.sala.help_text %}<small class="form__help">{{ form.sala.help_text }}</small>{% endif %}
+                    {% for error in form.sala.errors %}<small class="form__error">{{ error }}</small>{% endfor %}
+                </div>
+            </div>
+
+            {# ========== DESCRIPCIÓN ========== #}
+            <div class="form__group {% if form.descripcion.errors %}has-error{% endif %}">
+                <label class="form__label" for="{{ form.descripcion.id_for_label }}">{{ form.descripcion.label }}</label>
+                {{ form.descripcion }}
+                {% if form.descripcion.help_text %}<small class="form__help">{{ form.descripcion.help_text }}</small>{% endif %}
+                {% for error in form.descripcion.errors %}<small class="form__error">{{ error }}</small>{% endfor %}
+            </div>
+
+            {# ========== IMAGEN + PREVIEW ========== #}
+            <div class="form__group {% if form.imagen.errors %}has-error{% endif %}">
+                <label class="form__label" for="{{ form.imagen.id_for_label }}">{{ form.imagen.label }}</label>
+                {{ form.imagen }}
+
+                <!-- Contenedor para la previsualización -->
+                <div id="preview-container" style="margin-top: 10px; text-align: center; display: none;">
+                    <img id="preview-image" src="" alt="Previsualización de la imagen" style="max-width: 150px; max-height: 150px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: zoom-in;">
+                </div>
+
+                {% if form.imagen.help_text %}<small class="form__help">{{ form.imagen.help_text }}</small>{% endif %}
+                {% for error in form.imagen.errors %}<small class="form__error">{{ error }}</small>{% endfor %}
+            </div>
 
             <footer class="form__actions">
                 <button type="button" class="btn btn--ghost" id="btnCancelar">Cancelar</button>
@@ -48,49 +101,57 @@
 </div>
 
 <script>
-    // Previsualizar imagen cuando se selecciona un archivo
-    document.getElementById('id_imagen').addEventListener('change', function(event) {
-        const file = event.target.files[0];
-        const previewContainer = document.getElementById('preview-container');
-        const previewImage = document.getElementById('preview-image');
+    // ========== PREVIEW IMAGEN ==========
+    const inputImagen = document.getElementById('id_imagen');
+    const previewContainer = document.getElementById('preview-container');
+    const previewImage = document.getElementById('preview-image');
 
-        if (file && file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                previewImage.src = e.target.result;
-                previewContainer.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        } else {
-            previewContainer.style.display = 'none';
-            previewImage.src = '';
-        }
-    });
+    if (inputImagen) {
+        inputImagen.addEventListener('change', function(event) {
+            const file = event.target.files[0];
 
-    // Ampliar la imagen al hacer clic en la miniatura
-    document.getElementById('preview-image').addEventListener('click', function() {
-        const imgSrc = this.src;
-        const modal = document.getElementById('modal');
-        const modalImg = document.getElementById('modal-img');
-
-        modalImg.src = imgSrc;
-        modal.style.display = 'flex';
-
-        // Cerrar al hacer clic fuera del contenido
-        modal.onclick = function(e) {
-            if (e.target === modal) {
-                cerrarModal();
-            }
-        };
-
-        // Cerrar con la tecla Esc
-        document.addEventListener('keydown', function escCerrar(e) {
-            if (e.key === 'Escape') {
-                cerrarModal();
-                document.removeEventListener('keydown', escCerrar);
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    previewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewContainer.style.display = 'none';
+                previewImage.src = '';
             }
         });
-    });
+    }
+
+    // ========== MODAL PARA AMPLIAR IMAGEN ==========
+    if (previewImage) {
+        previewImage.addEventListener('click', function() {
+            const imgSrc = this.src;
+            if (!imgSrc) return;
+
+            const modal = document.getElementById('modal');
+            const modalImg = document.getElementById('modal-img');
+
+            modalImg.src = imgSrc;
+            modal.style.display = 'flex';
+
+            // Cerrar al hacer clic fuera del contenido
+            modal.onclick = function(e) {
+                if (e.target === modal) {
+                    cerrarModal();
+                }
+            };
+
+            // Cerrar con la tecla Esc
+            document.addEventListener('keydown', function escCerrar(e) {
+                if (e.key === 'Escape') {
+                    cerrarModal();
+                    document.removeEventListener('keydown', escCerrar);
+                }
+            });
+        });
+    }
 
     function cerrarModal() {
         const modal = document.getElementById('modal');
@@ -99,14 +160,73 @@
         }
     }
 
-    // Cancelar
+    // ========== CANCELAR ==========
     (function () {
         const cancelar = document.getElementById('btnCancelar');
+        if (!cancelar) return;
         cancelar.addEventListener('click', () => {
             if (document.referrer) window.history.back();
             else window.location.href = '/';
         });
     })();
+
+    // ========== AJAX: EDIFICIO ➜ PISO ➜ SALA ==========
+    document.addEventListener("DOMContentLoaded", function () {
+        const edificioSelect = document.getElementById("id_edificio");
+        const pisoSelect = document.getElementById("id_piso");
+        const salaSelect = document.getElementById("id_sala");
+
+        if (!edificioSelect || !pisoSelect || !salaSelect) return;
+
+        // Cuando cambia el edificio ➜ cargar pisos
+        edificioSelect.addEventListener("change", function () {
+            const edificioId = this.value;
+
+            pisoSelect.innerHTML = '<option value="">---------</option>';
+            salaSelect.innerHTML = '<option value="">---------</option>';
+
+            if (!edificioId) return;
+
+            fetch("{% url 'cargar-pisos' %}?edificio_id=" + encodeURIComponent(edificioId))
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.pisos) return;
+                    data.pisos.forEach(p => {
+                        const opt = document.createElement("option");
+                        opt.value = p.id;
+                        opt.textContent = p.texto;
+                        pisoSelect.appendChild(opt);
+                    });
+                })
+                .catch(err => {
+                    console.error("Error cargando pisos:", err);
+                });
+        });
+
+        // Cuando cambia el piso ➜ cargar salas
+        pisoSelect.addEventListener("change", function () {
+            const pisoId = this.value;
+
+            salaSelect.innerHTML = '<option value="">---------</option>';
+
+            if (!pisoId) return;
+
+            fetch("{% url 'cargar-salas' %}?piso_id=" + encodeURIComponent(pisoId))
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.salas) return;
+                    data.salas.forEach(s => {
+                        const opt = document.createElement("option");
+                        opt.value = s.id;
+                        opt.textContent = s.texto;
+                        salaSelect.appendChild(opt);
+                    });
+                })
+                .catch(err => {
+                    console.error("Error cargando salas:", err);
+                });
+        });
+    });
 </script>
 
 <style>
@@ -165,6 +285,18 @@
     .close-modal:hover {
         color: #000;
         background: rgba(255,255,255,0.9);
+    }
+
+    /* Fila Edificio / Piso / Sala */
+    .form__row-inline {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .form__row-inline .form__group {
+        flex: 1 1 0;
+        min-width: 160px;
     }
 </style>
 
