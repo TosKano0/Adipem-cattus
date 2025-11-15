@@ -90,7 +90,14 @@ class RegistroUsuarioForm(UserCreationForm):
             "edad":       forms.NumberInput(attrs={"class": "form-control", "min": 0, "placeholder": "Tu edad"}),
             "genero":     forms.Select(attrs={"class": "form-select"}),
             "nombre_rol": forms.Select(attrs={"class": "form-select"}),
+            
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        #  Mostrar solo la opción "usuario"
+        self.fields["nombre_rol"].choices = [("usuario", "Usuario")]
+
 
     def clean_email(self):
         email = (self.cleaned_data.get("email") or "").lower()
@@ -104,6 +111,8 @@ class RegistroUsuarioForm(UserCreationForm):
         user = super().save(commit=False)
         user.username = self.cleaned_data["email"].lower()
         user.email = self.cleaned_data["email"].lower()
+        # Forzar siempre el rol a "usuario" por seguridad
+        user.nombre_rol = "usuario"
         if commit:
             user.save()
         return user
