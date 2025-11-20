@@ -292,7 +292,7 @@ def formulario_reporte(request):
     return render(request, "app/form_reporte.html", {"form": form})
 
 @login_required
-@rol_requerido(["usuario"])
+@rol_requerido(["usuario", "administracion"])
 def cargar_pisos(request):
     edificio_id = request.GET.get("edificio_id")
     pisos = Piso.objects.filter(edificio_id=edificio_id).order_by("numero")
@@ -303,7 +303,7 @@ def cargar_pisos(request):
     return JsonResponse({"pisos": data})
 
 @login_required
-@rol_requerido(["usuario"])
+@rol_requerido(["usuario", "administracion"])
 def cargar_salas(request):
     piso_id = request.GET.get("piso_id")
     salas = Sala.objects.filter(piso_id=piso_id).order_by("codigo")
