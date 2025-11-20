@@ -16,31 +16,94 @@ PRIORIDADES = [
 ]
 
 class ReporteForm(forms.ModelForm):
-    categoria = forms.ChoiceField(choices=CATEGORIAS)
-    prioridad = forms.ChoiceField(choices=PRIORIDADES)
+    categoria = forms.ChoiceField(
+        choices=CATEGORIAS,
+        widget=forms.Select(attrs={"class": "form__control"})
+    )
+    prioridad = forms.ChoiceField(
+        choices=PRIORIDADES,
+        widget=forms.Select(attrs={"class": "form__control"})
+    )
+
+    edificio = forms.ModelChoiceField(
+        queryset=Edificio.objects.all(),
+        required=True,
+        label="Edificio",
+        widget=forms.Select(attrs={"class": "form__control"})
+    )
+    piso = forms.ModelChoiceField(
+        queryset=Piso.objects.none(),
+        required=True,
+        label="Piso",
+        widget=forms.Select(attrs={"class": "form__control"})
+    )
 
     class Meta:
         model = Reporte
-        fields = ["titulo", "ubicacion", "categoria", "prioridad", "descripcion", "imagen"]
+        fields = ["titulo", "categoria", "prioridad", "descripcion", "imagen", "sala"]
         labels = {
             "titulo": "Título",
-            "ubicacion": "Ubicación",
             "categoria": "Categoría",
             "prioridad": "Prioridad",
             "descripcion": "Descripción",
-            "imagen": "Imagen"
+            "imagen": "Imagen",
+            "sala": "Sala",
         }
         help_texts = {
             "descripcion": "Describe el problema con detalles útiles (fechas, personas, etc.).",
         }
         widgets = {
-            "titulo": forms.TextInput(attrs={"class": "form__control", "placeholder": "Ej.: Fuga de agua"}),
-            "ubicacion": forms.TextInput(attrs={"class": "form__control", "placeholder": "Ej.: Edificio E - Sala 104"}),
-            "categoria": forms.Select(attrs={"class": "form__control"}),
-            "prioridad": forms.Select(attrs={"class": "form__control"}),
-            "descripcion": forms.Textarea(attrs={"class": "form__control", "rows": 4, "placeholder": "Cuéntanos qué pasa…"}),
-            "imagen": forms.ClearableFileInput(attrs={"class": "form__control", "accept": "image/*"}),
+            "titulo": forms.TextInput(attrs={
+                "class": "form__control",
+                "placeholder": "Ej.: Fuga de agua"
+            }),
+            "descripcion": forms.Textarea(attrs={
+                "class": "form__control",
+                "rows": 4,
+                "placeholder": "Cuéntanos qué pasa…"
+            }),
+            "imagen": forms.ClearableFileInput(attrs={
+                "class": "form__control",
+                "accept": "image/*"
+            }),
+            "sala": forms.Select(attrs={"class": "form__control"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["piso"].queryset = Piso.objects.none()
+        self.fields["sala"].queryset = Sala.objects.none()
+
+        if "edificio" in self.data:
+            try:
+                edificio_id = int(self.data.get("edificio"))
+                self.fields["piso"].queryset = Piso.objects.filter(
+                    edificio_id=edificio_id
+                ).order_by("numero")
+            except (ValueError, TypeError):
+                pass
+
+        if "piso" in self.data:
+            try:
+                piso_id = int(self.data.get("piso"))
+                self.fields["sala"].queryset = Sala.objects.filter(
+                    piso_id=piso_id
+                ).order_by("codigo")
+            except (ValueError, TypeError):
+                pass
+
+        elif self.instance.pk and self.instance.sala_id:
+            sala = self.instance.sala
+            # Prellenar edificio y piso
+            self.fields["edificio"].initial = sala.edificio
+            self.fields["piso"].queryset = Piso.objects.filter(
+                edificio=sala.edificio
+            ).order_by("numero")
+            self.fields["piso"].initial = sala.piso
+            self.fields["sala"].queryset = Sala.objects.filter(
+                piso=sala.piso
+            ).order_by("codigo")
 
     def clean_titulo(self):
         titulo = self.cleaned_data["titulo"].strip()

@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from app.views import home, usuario_principal, formulario_reporte, admin, asignar_mantenedor, panel_admin, panel_admin_ubicacion, ReporteListView, ReporteCreateView, ReporteUpdateView, ReporteDeleteView, UsuarioListView, UsuarioCreateView, UsuarioUpdateView, UsuarioDeleteView, CategoriaListView, CategoriaCreateView, CategoriaUpdateView, CategoriaDeleteView, PrioridadListView, PrioridadCreateView, PrioridadUpdateView, PrioridadDeleteView, RolListView, RolCreateView, RolUpdateView, RolDeleteView, GeneroListView, GeneroCreateView, GeneroUpdateView, GeneroDeleteView, EdificioListView, EdificioCreateView, EdificioUpdateView, EdificioDeleteView, PisoListView, PisoCreateView, PisoUpdateView, PisoDeleteView, SalaListView, SalaCreateView, SalaUpdateView, SalaDeleteView
+from app.views import home, usuario_principal, formulario_reporte, admin, asignar_mantenedor, panel_admin, panel_admin_ubicacion, ReporteListView, ReporteCreateView, ReporteUpdateView, ReporteDeleteView, UsuarioListView, UsuarioCreateView, UsuarioUpdateView, UsuarioDeleteView, CategoriaListView, CategoriaCreateView, CategoriaUpdateView, CategoriaDeleteView, PrioridadListView, PrioridadCreateView, PrioridadUpdateView, PrioridadDeleteView, RolListView, RolCreateView, RolUpdateView, RolDeleteView, GeneroListView, GeneroCreateView, GeneroUpdateView, GeneroDeleteView, EdificioListView, EdificioCreateView, EdificioUpdateView, EdificioDeleteView, PisoListView, PisoCreateView, PisoUpdateView, PisoDeleteView, SalaListView, SalaCreateView, SalaUpdateView, SalaDeleteView, cargar_pisos, cargar_salas
 
 urlpatterns = [
     # 1. Página inicial → LOGIN
@@ -88,4 +88,7 @@ urlpatterns = [
     path("administrador/panel/usuarios/nuevo/", UsuarioCreateView.as_view(), name="usuario-create"),
     path("administrador/panel/usuarios/<int:pk>/editar/", UsuarioUpdateView.as_view(), name="usuario-update"),
     path("administrador/panel/usuarios/<int:pk>/eliminar/", UsuarioDeleteView.as_view(), name="usuario-delete"),
+    
+    path("api/pisos/", cargar_pisos, name="cargar-pisos"),
+    path("api/salas/", cargar_salas, name="cargar-salas"),
 ]

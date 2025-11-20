@@ -258,7 +258,7 @@
                         {% for r in reportes %}
                         <tr>
                             <td><strong>{{ r.titulo }}</strong><br><small>{{ r.descripcion|truncatechars:50 }}</small></td>
-                            <td>{{ r.ubicacion }}</td>
+                            <td>{{ r.sala.nombre }}</td>
                             <td>{{ r.categoria }}</td>
                             <td>
                                 {% if r.prioridad == 'Alta' %}

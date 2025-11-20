@@ -273,6 +273,28 @@ def formulario_reporte(request):
 
     return render(request, "app/form_reporte.html", {"form": form})
 
+@login_required
+@rol_requerido(["usuario"])
+def cargar_pisos(request):
+    edificio_id = request.GET.get("edificio_id")
+    pisos = Piso.objects.filter(edificio_id=edificio_id).order_by("numero")
+    data = [
+        {"id": p.id, "texto": f"Piso {p.numero} {('(' + p.etiqueta + ')') if p.etiqueta else ''}"}
+        for p in pisos
+    ]
+    return JsonResponse({"pisos": data})
+
+@login_required
+@rol_requerido(["usuario"])
+def cargar_salas(request):
+    piso_id = request.GET.get("piso_id")
+    salas = Sala.objects.filter(piso_id=piso_id).order_by("codigo")
+    data = [
+        {"id": s.id, "texto": f"{s.codigo} — {s.edificio.codigo.upper()}"}
+        for s in salas
+    ]
+    return JsonResponse({"salas": data})
+
 
 # ===========================================
 # Vistas de administración protegidas
