@@ -342,6 +342,30 @@
         .btn:hover {
             background: #0b5ed7;
         }
+
+        .btn-historial {
+            background: #198754;
+            border: 1px solid #198754;
+        }
+
+        .btn-historial:hover {
+            background: #157347;
+            border-color: #157347;
+        }
+
+        .btn-action {
+            display: inline-block;
+            margin-right: 5px;
+            margin-top: 5px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            text-decoration: none;
+            color: white;
+            text-align: center;
+            min-width: 85px;
+        }
     </style>
 </head>
 
@@ -544,6 +568,9 @@
                                 onclick="abrirModalGestion({{ r.id }}, {{ r.asignado_a.id|default:'null' }})">
                                 Gestionar
                             </button>
+                            <a href="{% url 'ver_historial_asignacion' r.id %}" class="btn-action btn-historial">
+                                Historial
+                            </a>
                         </td>
                     </tr>
                     {% empty %}

@@ -2,7 +2,13 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Historial de {{ reporte.titulo }}</title>
+    <title>
+        {% if tipo_historial == "asignacion" %}
+            Historial de asignación de {{ reporte.titulo }}
+        {% else %}
+            Historial de estados de {{ reporte.titulo }}
+        {% endif %}
+    </title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -122,7 +128,7 @@
 
         <!-- Información del Reporte -->
         <div class="report-info">
-            <p><strong>Ubicación:</strong> {{ reporte.ubicacion }}</p>
+            <p><strong>Ubicación:</strong> {{ reporte.sala.nombre }}</p>
             <p><strong>Estado Actual:</strong> 
                 {% if reporte.estado == 'completado' %}
                     <span class="badge bg-success">Completado</span>
@@ -138,28 +144,84 @@
 
         <!-- Historial de Estados -->
         {% if historial %}
-            <h4 class="mb-3">Cronología de Cambios</h4>
-            <div class="historial-list">
-                {% for registro in historial %}
-                <div class="historial-item">
-                    <h5>{{ registro.fecha_cambio|date:"d M Y, H:i" }}</h5>
-                    <p>
-                        Estado cambiado de 
-                        <span class="badge bg-secondary">
-                            {% if registro.estado_anterior %}{{ registro.estado_anterior|capfirst }}{% else %}Creado{% endif %}
-                        </span>
-                        a 
-                        <span class="badge bg-success">{{ registro.estado_nuevo|capfirst }}</span>
-                        {% if registro.cambiado_por %}
-                            por <em>{{ registro.cambiado_por.get_full_name|default:registro.cambiado_por.username }}</em>.
-                        {% endif %}
-                    </p>
+            {% if tipo_historial == "asignacion" %}
+                <!-- 🔧 HISTORIAL DE ASIGNACIÓN -->
+                <h4 class="mb-3">Cronología de Asignaciones de Mantenedor</h4>
+                <div class="historial-list">
+                    {% for registro in historial %}
+                    <div class="historial-item">
+                        <h5>{{ registro.creado_en|date:"d M Y, H:i" }}</h5>
+                        <p>
+                            <strong>Mantenedor:</strong>
+                            {% if registro.asignado_de %}
+                                <span class="badge bg-secondary">
+                                    {{ registro.asignado_de.get_full_name|default:registro.asignado_de.username }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">Sin asignación</span>
+                            {% endif %}
+                            →
+                            {% if registro.asignado_a %}
+                                <span class="badge bg-primary">
+                                    {{ registro.asignado_a.get_full_name|default:registro.asignado_a.username }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">Sin asignación</span>
+                            {% endif %}
+                        </p>
+                        <p>
+                            <strong>Estado (si cambió):</strong>
+                            {% if registro.estado_de or registro.estado_a %}
+                                <span class="badge bg-secondary">{{ registro.estado_de|default:"—" }}</span>
+                                →
+                                <span class="badge bg-success">{{ registro.estado_a|default:"—" }}</span>
+                            {% else %}
+                                <span class="text-muted">Sin cambio de estado asociado</span>
+                            {% endif %}
+                        </p>
+                        <p>
+                            {% if registro.cambiado_por %}
+                                <small>
+                                    Modificado por 
+                                    <em>{{ registro.cambiado_por.get_full_name|default:registro.cambiado_por.username }}</em>
+                                </small>
+                            {% endif %}
+                            {% if registro.motivo %}
+                                <br><small><strong>Motivo:</strong> {{ registro.motivo }}</small>
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
-            </div>
+            {% else %}
+                <!-- 🔄 HISTORIAL DE ESTADOS -->
+                <h4 class="mb-3">Cronología de Cambios de Estado</h4>
+                <div class="historial-list">
+                    {% for registro in historial %}
+                    <div class="historial-item">
+                        <h5>{{ registro.fecha_cambio|date:"d M Y, H:i" }}</h5>
+                        <p>
+                            Estado cambiado de 
+                            <span class="badge bg-secondary">
+                                {% if registro.estado_anterior %}{{ registro.estado_anterior|capfirst }}{% else %}Creado{% endif %}
+                            </span>
+                            a 
+                            <span class="badge bg-success">{{ registro.estado_nuevo|capfirst }}</span>
+                            {% if registro.cambiado_por %}
+                                por <em>{{ registro.cambiado_por.get_full_name|default:registro.cambiado_por.username }}</em>.
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
         {% else %}
             <div class="alert alert-info" role="alert">
-                Este reporte no tiene un historial de cambios de estado aún.
+                {% if tipo_historial == "asignacion" %}
+                    Este reporte no tiene un historial de cambios de asignación aún.
+                {% else %}
+                    Este reporte no tiene un historial de cambios de estado aún.
+                {% endif %}
             </div>
         {% endif %}
 
@@ -168,6 +230,10 @@
             {% if user.nombre_rol == "mantenimiento" %}
                 <a href="{% url 'mantenimiento' %}" class="btn btn-secondary">
                     Volver al Dashboard de Mantenimiento
+                </a>
+            {% elif user.nombre_rol == "administracion" %}
+                <a href="{% url 'admin' %}" class="btn btn-secondary">
+                    Volver al Panel de Administración
                 </a>
             {% else %}
                 <a href="{% url 'usuario_principal' %}" class="btn btn-secondary">

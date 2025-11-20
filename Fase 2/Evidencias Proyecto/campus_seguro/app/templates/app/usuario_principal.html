@@ -234,6 +234,7 @@
                 {% endif %}
             </div>
             <a href="{% url 'formulario-reporte' %}" class="btn">Nuevo reporte</a>
+            <a href="{% url 'logout' %}" class="btn btn-secondary">Cerrar Sesión</a>
         </div>
 
         <!-- Tabla de reportes -->
@@ -321,11 +322,6 @@
                 {% endif %}
             </div>
             {% endif %}
-        </div>
-
-        <!-- Botón Cerrar sesión -->
-        <div style="text-align: center; margin-top: 20px;">
-            <a href="{% url 'logout' %}" class="btn btn-secondary">Cerrar sesión</a>
         </div>
     </div>
 
