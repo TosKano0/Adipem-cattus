@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from app.views import home, usuario_principal, formulario_reporte, admin, asignar_mantenedor, panel_admin, panel_admin_ubicacion, ReporteListView, ReporteCreateView, ReporteUpdateView, ReporteDeleteView, UsuarioListView, UsuarioCreateView, UsuarioUpdateView, UsuarioDeleteView, CategoriaListView, CategoriaCreateView, CategoriaUpdateView, CategoriaDeleteView, PrioridadListView, PrioridadCreateView, PrioridadUpdateView, PrioridadDeleteView, RolListView, RolCreateView, RolUpdateView, RolDeleteView, GeneroListView, GeneroCreateView, GeneroUpdateView, GeneroDeleteView, EdificioListView, EdificioCreateView, EdificioUpdateView, EdificioDeleteView, PisoListView, PisoCreateView, PisoUpdateView, PisoDeleteView, SalaListView, SalaCreateView, SalaUpdateView, SalaDeleteView, cargar_pisos, cargar_salas
+from app.views import home, usuario_principal, formulario_reporte, admin, asignar_mantenedor, ver_historial_asignacion, panel_admin, panel_admin_ubicacion, ReporteListView, ReporteCreateView, ReporteUpdateView, ReporteDeleteView, UsuarioListView, UsuarioCreateView, UsuarioUpdateView, UsuarioDeleteView, CategoriaListView, CategoriaCreateView, CategoriaUpdateView, CategoriaDeleteView, PrioridadListView, PrioridadCreateView, PrioridadUpdateView, PrioridadDeleteView, RolListView, RolCreateView, RolUpdateView, RolDeleteView, GeneroListView, GeneroCreateView, GeneroUpdateView, GeneroDeleteView, EdificioListView, EdificioCreateView, EdificioUpdateView, EdificioDeleteView, PisoListView, PisoCreateView, PisoUpdateView, PisoDeleteView, SalaListView, SalaCreateView, SalaUpdateView, SalaDeleteView, cargar_pisos, cargar_salas
 
 urlpatterns = [
     # 1. Página inicial → LOGIN
@@ -26,6 +26,8 @@ urlpatterns = [
     path('formulario-reporte/', formulario_reporte, name="formulario-reporte"),
 
     path('reporte/<int:reporte_id>/historial/', views.ver_historial_reporte, name='ver_historial_reporte'),
+    
+    path('reporte/<int:reporte_id>/historial-asignacion/', ver_historial_asignacion, name='ver_historial_asignacion'),
     
     path('administrador/', admin, name="admin"),
     

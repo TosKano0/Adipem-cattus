@@ -153,13 +153,33 @@ class RegistroUsuarioForm(UserCreationForm):
             "edad":       forms.NumberInput(attrs={"class": "form-control", "min": 0, "placeholder": "Tu edad"}),
             "genero":     forms.Select(attrs={"class": "form-select"}),
             "nombre_rol": forms.Select(attrs={"class": "form-select"}),
-            
         }
 
     def __init__(self, *args, **kwargs):
+        # ⬅️ Recibimos el usuario que está creando la cuenta
+        self.request_user = kwargs.pop("request_user", None)
         super().__init__(*args, **kwargs)
-        #  Mostrar solo la opción "usuario"
-        self.fields["nombre_rol"].choices = [("usuario", "Usuario")]
+
+        # Valor por defecto del rol
+        self.fields["nombre_rol"].initial = "usuario"
+
+        # Usamos los choices declarados en el modelo Usuario
+        if hasattr(User, "ROL_CHOICES"):
+            self.fields["nombre_rol"].choices = User.ROL_CHOICES
+
+        # ¿El que registra es admin?
+        es_admin = False
+        if self.request_user and self.request_user.is_authenticated:
+            es_admin = (
+                self.request_user.is_superuser
+                or self.request_user.is_staff
+                or getattr(self.request_user, "nombre_rol", None) == "administracion"
+            )
+
+        if not es_admin:
+            # 🚫 No admin: no puede cambiar el rol
+            self.fields["nombre_rol"].choices = [("usuario", "Usuario")]
+            self.fields["nombre_rol"].disabled = True  # Lo ve pero bloqueado
 
 
     def clean_email(self):
@@ -172,10 +192,28 @@ class RegistroUsuarioForm(UserCreationForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.username = self.cleaned_data["email"].lower()
-        user.email = self.cleaned_data["email"].lower()
-        # Forzar siempre el rol a "usuario" por seguridad
-        user.nombre_rol = "usuario"
+
+        # username = correo
+        email = self.cleaned_data["email"].lower()
+        user.username = email
+        user.email = email
+
+        # Revalidamos si el creador es admin por seguridad
+        es_admin = False
+        if self.request_user and self.request_user.is_authenticated:
+            es_admin = (
+                self.request_user.is_superuser
+                or self.request_user.is_staff
+                or getattr(self.request_user, "nombre_rol", None) == "administracion"
+            )
+
+        if es_admin:
+            # ✅ Admin: se respeta lo que eligió en el form (si viene vacío, usuario)
+            user.nombre_rol = self.cleaned_data.get("nombre_rol") or "usuario"
+        else:
+            # 🚫 No admin: siempre será usuario aunque “toqueteen” el HTML
+            user.nombre_rol = "usuario"
+
         if commit:
             user.save()
         return user

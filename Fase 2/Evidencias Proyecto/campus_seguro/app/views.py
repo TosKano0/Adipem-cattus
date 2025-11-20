@@ -246,6 +246,24 @@ def ver_historial_reporte(request, reporte_id):
     return render(request, 'app/ver_historial.html', {
         'reporte': reporte,
         'historial': historial,
+        'tipo_historial': 'estado',
+    })
+
+@rol_requerido(["administracion"])
+@login_required
+def ver_historial_asignacion(request, reporte_id):
+    reporte = get_object_or_404(Reporte, id=reporte_id)
+
+    historial = (
+        reporte.historial_asignaciones
+        .select_related("asignado_de", "asignado_a", "cambiado_por")
+        .order_by("-creado_en")
+    )
+
+    return render(request, "app/ver_historial.html", {
+        "reporte": reporte,
+        "historial": historial,
+        "tipo_historial": "asignacion",
     })
 
 # 4 CERRAR SESIÓN
@@ -573,6 +591,11 @@ class UsuarioCreateView(CreateView):
     form_class = RegistroUsuarioForm
     template_name = "app/form_usuario.html"
     success_url = reverse_lazy("usuario-list")
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request_user"] = self.request.user
+        return kwargs
 
 @method_decorator(rol_requerido(["administracion"]), name="dispatch")
 @method_decorator(login_required, name="dispatch")
@@ -645,6 +668,11 @@ class UsuarioUpdateView(UpdateView):
     form_class = RegistroUsuarioForm
     template_name = "app/form_usuario.html"
     success_url = reverse_lazy("usuario-list")
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request_user"] = self.request.user
+        return kwargs
 
 @method_decorator(rol_requerido(["administracion"]), name="dispatch")
 @method_decorator(login_required, name="dispatch")
