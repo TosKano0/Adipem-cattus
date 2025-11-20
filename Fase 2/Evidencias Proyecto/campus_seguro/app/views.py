@@ -573,6 +573,11 @@ class UsuarioCreateView(CreateView):
     form_class = RegistroUsuarioForm
     template_name = "app/form_usuario.html"
     success_url = reverse_lazy("usuario-list")
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request_user"] = self.request.user
+        return kwargs
 
 @method_decorator(rol_requerido(["administracion"]), name="dispatch")
 @method_decorator(login_required, name="dispatch")
@@ -645,6 +650,11 @@ class UsuarioUpdateView(UpdateView):
     form_class = RegistroUsuarioForm
     template_name = "app/form_usuario.html"
     success_url = reverse_lazy("usuario-list")
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request_user"] = self.request.user
+        return kwargs
 
 @method_decorator(rol_requerido(["administracion"]), name="dispatch")
 @method_decorator(login_required, name="dispatch")

@@ -38,7 +38,7 @@ class Reporte(models.Model):
     categoria = models.CharField(max_length=100)
     prioridad = models.CharField(max_length=100)
     descripcion = models.TextField()
-    imagen = models.ImageField(upload_to='reportes/', blank=True, null=True)
+    imagen = models.ImageField(upload_to='reportes/')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 

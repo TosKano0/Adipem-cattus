@@ -58,7 +58,6 @@
             <td>{{ g.user.date_joined|default:g.date_joined }}</td>
             <td>{{ g.user.last_login|default:g.last_login }}</td>
             <td class="text-end">
-              <a href="{% url 'usuario-update' g.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a>
               <a href="{% url 'usuario-delete' g.pk %}" class="btn btn-sm btn-outline-danger">Eliminar</a>
             </td>
           </tr>
